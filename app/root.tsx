@@ -12,10 +12,10 @@ import {
 
 import styles from "~/styles/main.css";
 
-import fontawesome from "~/styles/fontawesome/css/fontawesome.min.css";
-import faSolid from "~/styles/fontawesome/css/solid.min.css";
-import faRegular from "~/styles/fontawesome/css/regular.min.css";
-import faBrands from "~/styles/fontawesome/css/brands.min.css";
+import fontawesome from "@fortawesome/fontawesome-free/css/fontawesome.min.css";
+import faRegular from "@fortawesome/fontawesome-free/css/regular.min.css";
+import faSolid from "@fortawesome/fontawesome-free/css/solid.min.css";
+import faBrands from "@fortawesome/fontawesome-free/css/brands.min.css";
 
 export const meta: MetaFunction = () => ({
   title: "StreetRelay",
@@ -79,7 +79,7 @@ export function ErrorBoundary() {
           
         </head>
       </html>
-    )
+    );
   }
 }
 
