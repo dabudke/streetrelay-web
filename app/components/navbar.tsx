@@ -14,7 +14,7 @@ const navPaths: [ string, string, [ string, string ][]? ][] = [
   [ "About", "/about/" ],
 ];
 
-export function Navbar({ auth, path }: PropsWithoutRef<{ auth?: string, path: string }>) {
+export function Navbar({ auth, path }: PropsWithoutRef<{ auth?: string, path?: string }>) {
   return (
     <nav className="flex content-center justify-between w-auto h-[4.8rem] my-6 mx-16 px-5 rounded-3xl text-lg text-emerald-950 bg-emerald-300 dark:text-emerald-100 dark:bg-emerald-700">
       <p className="ml-2 block italic my-auto text-2xl">Street<span className="font-bold">Relay</span></p>

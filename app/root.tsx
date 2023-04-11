@@ -1,4 +1,4 @@
-import type { LinksFunction, MetaFunction } from "@remix-run/node";
+import type { LinksFunction, MetaFunction} from "@remix-run/node";
 import {
   isRouteErrorResponse,
   Links,
@@ -9,6 +9,7 @@ import {
   ScrollRestoration,
   useRouteError,
 } from "@remix-run/react";
+import { Navbar } from "./components/navbar";
 
 import styles from "~/styles/main.css";
 
@@ -36,19 +37,19 @@ export function ErrorBoundary() {
     return (
       <html lang="en">
         <head>
-          <Meta />
+          <meta name="title" content={`${error.status} ${error.statusText} - StreetRelay`} />
           <meta charSet="utf-8" />
-          <meta name="viewport" content="width=device-width;initial-scale=1" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
           <Links />
-          <script src="https://kit.fontawesome.com/1ef4e3c534.js" crossOrigin="anonymous" />
         </head>
-        <body>
-          {/* <Hero>
-            <Hero.Body>
-              <Heading>{error.status}</Heading>
-              <Heading subtitle>{error.statusText}</Heading>
-            </Hero.Body>
-          </Hero> */}
+        <body className="bg-white dark:bg-stone-950">
+          <Navbar />
+          <div className="flex flex-col justify-center align-center w-auto py-12 mx-28 mt-5 bg-gradient-to-br from-stone-400 to-stone-700 dark:from-stone-500 dark:to-stone-800 rounded-2xl">
+            <h1 className="text-[12rem] mx-auto text-stone-200 dark:text-stone-300">{error.status}</h1>
+            <p className="text-3xl mx-auto text-stone-100 dark:text-stone-200">{error.statusText}</p>
+            <p className="mt-3 mx-auto text-stone-50">Check the spelling in the URL, or try going to the homepage. If you still get this, try again later.</p>
+          </div>
+          <LiveReload />
         </body>
       </html>
     );
@@ -56,19 +57,19 @@ export function ErrorBoundary() {
     return (
       <html lang="en">
         <head>
-          <Meta />
+          <meta name="title" content='500 Internal Server Error - StreetRelay' />
           <meta charSet="utf-8" />
-          <meta name="viewport" content="width=device-width;initial-scale=1" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
           <Links />
-          <script src="https://kit.fontawesome.com/1ef4e3c534.js" crossOrigin="anonymous" />
         </head>
-        <body>
-          {/* <Hero>
-            <Hero.Body>
-              <Heading>An error occoured</Heading>
-              <Heading subtitle>{error.message}</Heading>
-            </Hero.Body>
-          </Hero> */}
+        <body className="bg-white dark:bg-stone-950">
+          <Navbar />
+          <div className="flex flex-col justify-center align-center w-auto py-12 mx-28 mt-5 bg-gradient-to-br from-stone-400 to-stone-700 dark:from-stone-500 dark:to-stone-800 rounded-2xl">
+            <h1 className="text-[12rem] mx-auto text-stone-200 dark:text-stone-300">500</h1>
+            <p className="text-3xl mx-auto text-stone-100 dark:text-stone-200">Internal Server Error</p>
+            <p className="mt-3 mx-auto text-stone-50">Something went wrong internally, try again later.</p>
+          </div>
+          <LiveReload />
         </body>
       </html>
     );
@@ -76,8 +77,19 @@ export function ErrorBoundary() {
     return (
       <html lang="en">
         <head>
-          
+          <meta name="title" content="Unknown Error - StreetRelay" />
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
+          <Links />
         </head>
+        <body className="bg-white dark:bg-stone-950">
+          <Navbar />
+          <div className="flex flex-col justify-center align-center w-auto py-12 mx-28 mt-5 bg-gradient-to-br from-stone-400 to-stone-700 dark:from-stone-500 dark:to-stone-800 rounded-2xl">
+            <h1 className="text-3xl mx-auto mb-2 text-stone-100">Something went wrong.</h1>
+            <p className="text-2xl mx-auto text-stone-100">Try again later.</p>
+          </div>
+          <LiveReload />
+        </body>
       </html>
     );
   }
@@ -92,7 +104,7 @@ export default function App() {
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <Links />
       </head>
-      <body>
+      <body className="bg-white dark:bg-stone-950">
         <Outlet />
         <ScrollRestoration />
         <Scripts />
