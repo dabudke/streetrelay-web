@@ -25,7 +25,7 @@ export function Navbar({ auth, path }: PropsWithoutRef<{ auth?: string, path: st
               {name}
               <i className="h-[0.75em] ml-2 fa-solid fa-caret-down fa-xs" />
             </a>
-            <ul id={`dropdown-${name}`} className="hidden absolute flex flex-col py-2 rounded-md top-7 w-36 bg-emerald-500 dark:bg-emerald-500 dark:text-emerald-950">
+            <ul id={`dropdown-${name}`} className="hidden absolute flex flex-col py-2 rounded-md top-7 w-36 bg-emerald-500 text-emerald-50 dark:text-emerald-950">
               { dropdown.map(([ name, url ]) => 
                 <li key={name}><a href={url} className="block min-w-full py-1.5 pl-4 pr-auto hover:bg-emerald-800 hover:text-emerald-50">{name}</a></li>
               )}
