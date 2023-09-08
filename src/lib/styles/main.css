@@ -1,0 +1,56 @@
+@import url("https://fonts.googleapis.com/css2?family=Comfortaa&family=Nunito&display=swap");
+
+* {
+  font-family: var(--body-family);
+  font-size: 12pt;
+  box-sizing: border-box;
+  color: var(--text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--title-family);
+}
+
+:any-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+}
+
+:root {
+  --text: rgb(5, 20, 11);
+  --background: rgb(248, 255, 251);
+
+  --primary: rgb(28, 212, 92);
+  --on-primary: var(--text);
+  --secondary: rgb(216, 238, 224);
+  --on-secondary: var(--text);
+  --accent: rgb(95, 120, 105);
+  --on-accent: var(--background);
+
+  --error: rgb(212, 46, 28);
+  --on-error: var(--on-primary);
+
+  --body-family: Nunito, sans-serif;
+  --title-family: Comfortaa, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: rgb(255, 255, 255);
+    --background: rgb(6, 10, 7);
+
+    --on-primary: var(--background);
+    --secondary: rgb(14, 32, 21);
+    --accent: rgb(176, 192, 182);
+  }
+}
