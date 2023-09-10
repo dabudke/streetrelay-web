@@ -23,7 +23,7 @@
 
 {#if data.error}
   <div class="error">
-    <Fa icon={faWarning} />
+    <span class="icon-wrapper"><Fa icon={faWarning} /></span>
     {#if data.error == "expired"}
       <p>Session expired, please log in again.</p>
     {:else if data.error == "invalid"}
@@ -107,15 +107,25 @@
 
   .error {
     display: flex;
+    justify-content: center;
     background: var(--error);
     width: fit-content;
     padding: 1rem 1rem;
     border-radius: 0.8rem;
     color: var(--on-error);
+    width: 100%;
+    margin-bottom: 1rem;
   }
 
   .error * {
-    margin: 0;
+    margin: auto;
+    display: block;
+  }
+  .icon-wrapper {
+    margin-top: 0.06rem;
+  }
+  .error *:last-child {
+    margin-left: 0.3rem;
   }
 
   .hint {
