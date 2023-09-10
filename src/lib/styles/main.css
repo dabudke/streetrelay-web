@@ -38,7 +38,7 @@ body {
   --on-accent: var(--background);
 
   --error: rgb(212, 46, 28);
-  --on-error: var(--on-primary);
+  --on-error: var(--background);
 
   --body-family: Nunito, sans-serif;
   --title-family: Comfortaa, sans-serif;
@@ -52,5 +52,6 @@ body {
     --on-primary: var(--background);
     --secondary: rgb(14, 32, 21);
     --accent: rgb(176, 192, 182);
+    --on-error: var(--text);
   }
 }

@@ -120,6 +120,7 @@
   .error * {
     margin: auto;
     display: block;
+    color: var(--on-error);
   }
   .icon-wrapper {
     margin-top: 0.06rem;
