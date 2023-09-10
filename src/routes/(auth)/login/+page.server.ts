@@ -81,12 +81,10 @@ export const actions: Actions = {
         expires: new Date(Date.now() + 2_592_000_000),
         lastSeen: new Date(),
         name: ua
-          ? `${ua.getBrowser().name} on ${ua.getOS().name} ${
-              ua.getOS().version
-            }`
+          ? `${ua.getBrowser().name} on ${ua.getOS().name}`
           : "Unknown Device",
         ip: getClientAddress(),
-        mobile: ua?.getDevice().type == "mobile",
+        device: ua?.getDevice().type ?? "desktop",
       },
     });
 
