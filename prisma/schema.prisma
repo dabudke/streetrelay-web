@@ -26,29 +26,46 @@ model Session {
   @@map("sessions")
 }
 
-type Device {
-  name         String
-  lastSeen     DateTime
-  refreshToken String   @default(cuid())
+type Console {
+  tokenIssued DateTime
 }
 
 model User {
   id       String    @id @map("_id")
   password String
   sessions Session[]
-  devices  Device[]
+  console  Console
 
-  nickname     String
-  mii          Bytes?
-  starredBy    User[]     @relation("StarredUsers", fields: [starredByIDs], references: [id])
+  nickname String
+  mii      Bytes?
+
+  starCount    Int      @default(0)
+  starredBy    User[]   @relation("StarredUsers", fields: [starredByIDs], references: [id])
   starredByIDs String[]
-  stars        Int        @default(0)
-  starred      User[]     @relation("StarredUsers", fields: [starredIDs], references: [id])
-  starredIDs   String[]
-  tags         Int        @default(0)
-  games        GameData[]
+
+  stars   User[]   @relation("StarredUsers", fields: [starIDs], references: [id])
+  starIDs String[]
+
+  inboundTags  Tag[] @relation("InboundTag")
+  outboundTags Tag[] @relation("OutboundTag")
+
+  tags Int @default(0)
+
+  games GameData[]
 
   @@map("users")
+}
+
+model Tag {
+  id String @id @default(cuid()) @map("_id")
+
+  user   User   @relation("InboundTag", fields: [userID], references: [id])
+  userID String
+
+  target   User   @relation("OutboundTag", fields: [targetID], references: [id])
+  targetID String
+
+  @@map("tags")
 }
 
 model GameData {
