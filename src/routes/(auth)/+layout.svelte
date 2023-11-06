@@ -1,13 +1,15 @@
-<form
-  class="card"
-  method="post"
-  novalidate
->
-  <slot />
-</form>
+<div class="background">
+  <form
+    class="card"
+    method="post"
+    novalidate
+  >
+    <slot />
+  </form>
+</div>
 
 <style>
-  :global(body) {
+  .background {
     min-height: 100vh;
     width: 100vw;
     background: linear-gradient(
