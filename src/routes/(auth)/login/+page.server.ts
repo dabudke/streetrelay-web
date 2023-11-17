@@ -6,7 +6,7 @@ import * as bcrypt from "bcrypt";
 import { UAParser } from "ua-parser-js";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
-  const redirectTo = url.searchParams.get("r") ?? "/";
+  const redirectTo = url.searchParams.get("r");
 
   const sessionToken = cookies.get("session") ?? "";
   const session = await prisma.session.findUnique({
@@ -14,27 +14,26 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   });
 
   if (await isValidSession(session)) {
-    return redirect(303, redirectTo);
+    return redirect(303, redirectTo ?? "/");
   }
 
-  const username = url.searchParams.get("u");
   if (session) {
-    return { username: username ?? session.userID, error: "expired" };
+    return { username: session.userID, error: "expired", redirectTo };
   }
 
   if (sessionToken) {
     cookies.set("session", "");
-    return { username, error: "invalid" };
+    return { username: "", error: "invalid", redirectTo };
   }
 
-  return { username };
+  return { username: "", redirectTo };
 };
 
 export const actions: Actions = {
   default: async ({ request, url, cookies, getClientAddress }) => {
     const data = await request.formData();
 
-    const userID = data.get("userid") as string | undefined,
+    const usernameOrEmail = data.get("usernameOrEmail") as string | undefined,
       password = data.get("password") as string | undefined;
 
     const redirectTo = url.searchParams.get("r") ?? "/",
@@ -43,16 +42,35 @@ export const actions: Actions = {
     const uaHeader = request.headers.get("user-agent"),
       ua = uaHeader == null ? uaHeader : new UAParser(uaHeader);
 
-    if (!userID) {
-      return fail(400, { username: userID, error: "missing" });
+    if (!usernameOrEmail || !password) {
+      return fail(400, {
+        username: usernameOrEmail,
+        error: {
+          usernameOrEmail: !usernameOrEmail
+            ? "Please input a username or email"
+            : null,
+          password: !password ? "Please input a password" : null,
+        },
+      });
     }
-    const user = await prisma.user.findUnique({ where: { id: userID } });
+    const user = await prisma.user.findUnique({
+      where: { id: usernameOrEmail },
+    });
     if (!user) {
-      return fail(400, { username: userID, error: "invalid" });
+      return fail(400, {
+        username: usernameOrEmail,
+        error: {
+          usernameOrEmail: "Invalid username or email.",
+          password: null,
+        },
+      });
     }
 
-    if (!password || !(await bcrypt.compare(password, user.password))) {
-      return fail(400, { username: userID, error: "incorrect" });
+    if (!(await bcrypt.compare(password, user.password))) {
+      return fail(400, {
+        username: usernameOrEmail,
+        error: { usernameOrEmail: null, password: "Incorrect password" },
+      });
     }
 
     if (oldSessionToken) {

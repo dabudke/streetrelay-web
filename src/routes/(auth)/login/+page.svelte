@@ -1,20 +1,25 @@
 <script lang="ts">
   import type { ActionData, PageData, Snapshot } from "./$types";
   import Fa from "svelte-fa";
-  import { faWarning } from "@fortawesome/free-solid-svg-icons";
+  import {
+    faKey,
+    faUser,
+    faUserCircle,
+    faWarning,
+  } from "@fortawesome/free-solid-svg-icons";
 
   export let data: PageData;
 
   export let form: ActionData;
 
   export const snapshot: Snapshot<{ username: string }> = {
-    capture: () => ({ username: userID }),
+    capture: () => ({ username: usernameOrEmail }),
     restore: (data) => {
-      userID = data.username;
+      usernameOrEmail = data.username;
     },
   };
 
-  let userID: string = form?.username ?? data.username ?? "";
+  let usernameOrEmail: string = form?.username ?? data.username ?? "";
 </script>
 
 <svelte:head>
@@ -32,80 +37,110 @@
   </div>
 {/if}
 
-<form method="post">
-  <label>
-    User ID<br />
-    <input
-      class:invalid={form?.error == "missing" || form?.error == "invalid"}
-      name="userid"
-      type="text"
-      bind:value={userID}
-      autocomplete="username"
-    />
-    {#if form?.error == "missing"}
-      <br />
-      <span class="hint">Please input your user ID</span>
-    {:else if form?.error == "invalid"}
-      <br />
-      <span class="hint">Invalid user ID</span>
-    {/if}
-  </label><br />
-  <label>
-    Password<br />
-    <input
-      class:invalid={form?.error == "incorrect"}
-      type="password"
-      name="password"
-      autocomplete="current-password"
-    />
-    {#if form?.error == "incorrect"}
-      <br />
-      <span class="hint">Incorrect Password</span>
-    {/if}
-  </label><br />
-  <a href="/getstarted{userID ? '?u=' + encodeURIComponent(userID) : ''}"
-    >Sign Up</a
-  >
-  <button type="submit">Login</button>
-</form>
+<h1>Welcome Back to StreetRelay!</h1>
+<p>To continue, please log in.</p>
+
+<label class:error={form?.error.usernameOrEmail}>
+  <Fa icon={faUserCircle} />
+  <input
+    type="text"
+    name="usernameOrEmail"
+    autocomplete="username"
+    placeholder="Username or Email"
+    bind:value={usernameOrEmail}
+    on:change={() => {
+      if (form !== null) form.error.usernameOrEmail = null;
+    }}
+  />
+</label>
+{#if form?.error.usernameOrEmail}
+  <p class="hint error">{form?.error.usernameOrEmail}</p>
+{:else}<br />{/if}
+
+<label class:error={form?.error.password}>
+  <Fa icon={faKey} />
+  <input
+    type="password"
+    name="password"
+    autocomplete="current-password"
+    placeholder="Password"
+    on:change={() => {
+      if (form !== null) form.error.password = null;
+    }}
+  />
+</label>
+{#if form?.error.password}
+  <p class="hint error">{form?.error.password}</p>
+{:else}<br />{/if}
+
+<button type="submit">Login</button>
+<p style="margin-bottom: 0">
+  Not a member yet? <a href="/get-started">Get started here</a>
+</p>
 
 <style>
+  label {
+    background: var(--secondary);
+    border-radius: 0.3rem;
+    width: 100%;
+    padding: 0.5rem 0.7rem;
+    display: flex;
+    align-content: center;
+    transition: background 100ms ease-out, box-shadow 100ms ease-out,
+      outline-color 100ms ease-out;
+    outline: solid 0.1rem transparent;
+    height: 2.5rem;
+  }
+  label.error {
+    background: color-mix(in srgb, var(--error), var(--background) 75%);
+  }
+  label:hover {
+    box-shadow: 0 3px 10px -2px rgba(0, 0, 0, 0.4);
+  }
+  label:focus-within {
+    background: transparent;
+    box-shadow: none;
+    outline-color: var(--primary);
+  }
+  label.error:focus-within {
+    outline-color: var(--error);
+  }
+  label :global(*),
+  label input::placeholder {
+    color: color-mix(in srgb, var(--text), var(--background) 30%);
+    margin: auto 0;
+    transition: color 100ms ease-out;
+  }
+  label.error :global(*),
+  label.error input::placeholder {
+    color: color-mix(in srgb, var(--error), var(--on-secondary) 75%);
+  }
+  label:focus-within :global(*) {
+    color: var(--text);
+  }
+
   input {
     background: transparent;
-    border: 0.1rem solid var(--accent);
-    border-radius: 0.3rem;
-    padding: 0.5rem 0.7rem;
-    transition: border 200ms ease-out;
-    width: 20rem;
-  }
-  input.invalid {
-    border-color: var(--error);
-  }
-  input:focus {
-    border-color: var(--primary);
+    border: none;
+    margin-left: 0.6rem;
     outline: none;
-  }
-  label {
-    display: block;
+    flex-grow: 1;
   }
 
-  a,
   button {
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    margin-top: 0.3rem;
-  }
-  a {
-    background-color: var(--secondary);
-    color: var(--on-secondary);
-  }
-  button {
-    background-color: var(--primary);
+    border-radius: 0.3rem;
+    transition: background 100ms ease-out, color 100ms ease-out;
+    background: var(--primary);
     color: var(--on-primary);
     border: none;
+    width: 100%;
+    height: 2.5rem;
+  }
+  button:hover {
+    background: color-mix(in srgb, var(--primary), var(--on-primary) 20%);
   }
 
-  .error {
+  div.error {
     display: flex;
     justify-content: center;
     background: var(--error);
@@ -116,8 +151,7 @@
     width: 100%;
     margin-bottom: 1rem;
   }
-
-  .error * {
+  div.error * {
     margin: auto;
     display: block;
     color: var(--on-error);
@@ -130,7 +164,12 @@
   }
 
   .hint {
-    margin: 0;
-    color: var(--error);
+    display: block;
+    margin: 0.3rem 0.3rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .hint.error {
+    color: color-mix(in srgb, var(--text), var(--error) 60%);
   }
 </style>
