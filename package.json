@@ -4,7 +4,7 @@
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "prisma generate && vite dev",
     "build": "prisma generate && vite build",
     "preview": "prisma generate && vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -36,6 +36,7 @@
     "bcrypt": "^5.1.1",
     "jose": "^4.14.4",
     "prisma": "^5.2.0",
+    "resend": "^2.0.0",
     "ua-parser-js": "^1.0.35"
   },
   "prisma": {

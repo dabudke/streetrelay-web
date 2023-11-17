@@ -31,12 +31,14 @@ type Console {
 }
 
 model User {
-  id       String    @id @map("_id")
-  password String
-  sessions Session[]
-  console  Console
+  id            String    @id @map("_id")
+  email         String
+  emailVerified Boolean   @default(false)
+  password      String
+  sessions      Session[]
+  console       Console?
 
-  nickname String
+  nickname String?
   mii      Bytes?
 
   starCount    Int      @default(0)
