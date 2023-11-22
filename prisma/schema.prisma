@@ -30,13 +30,20 @@ type Console {
   tokenIssued DateTime
 }
 
+type EmailVerification {
+  verified  Boolean @default(false)
+  emailSent Boolean @default(false)
+  emailId   String?
+  oldEmail  String?
+}
+
 model User {
-  id            String    @id @map("_id")
-  email         String
-  emailVerified Boolean   @default(false)
-  password      String
-  sessions      Session[]
-  console       Console?
+  id                String            @id @map("_id")
+  email             String
+  emailVerification EmailVerification
+  password          String
+  sessions          Session[]
+  console           Console?
 
   nickname String?
   mii      Bytes?

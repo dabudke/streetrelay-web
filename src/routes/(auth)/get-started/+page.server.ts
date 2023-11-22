@@ -95,7 +95,11 @@ export const actions: Actions = {
     const existingEmail = prisma.user.findFirst({
       where: {
         email,
-        emailVerified: true,
+        emailVerification: {
+          is: {
+            verified: true,
+          },
+        },
       },
     });
     const existingUsername = prisma.user.findFirst({
@@ -137,6 +141,7 @@ export const actions: Actions = {
         email,
         id: username,
         password: await hash(password, 10),
+        emailVerification: {},
       },
     });
     try {
