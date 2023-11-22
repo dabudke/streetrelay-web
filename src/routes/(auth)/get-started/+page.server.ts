@@ -139,21 +139,8 @@ export const actions: Actions = {
         password: await hash(password, 10),
       },
     });
-    const session = prisma.session.create({
-      data: {
-        userID: username,
-        expires: new Date(Date.now() + 2_592_000_000),
-        lastSeen: new Date(),
-        name: ua
-          ? `${ua.getBrowser().name} on ${ua.getOS().name}`
-          : "Unknown Device",
-        ip: getClientAddress(),
-        device: ua?.getDevice().type ?? "desktop",
-      },
-    });
     try {
       await user;
-      await session;
     } catch (e) {
       console.error(e);
       return fail(500, {
@@ -167,6 +154,37 @@ export const actions: Actions = {
         },
       });
     }
+
+    const session = prisma.session.create({
+      data: {
+        userID: username,
+        expires: new Date(Date.now() + 2_592_000_000),
+        lastSeen: new Date(),
+        name: ua
+          ? `${ua.getBrowser().name} on ${ua.getOS().name}`
+          : "Unknown Device",
+        ip: getClientAddress(),
+        device: ua?.getDevice().type ?? "desktop",
+      },
+    });
+
+    try {
+      await session;
+    } catch (e) {
+      console.error(e);
+      return fail(500, {
+        success: false,
+        error: {
+          email: null,
+          username: null,
+          password: false,
+          creation:
+            "An error occured while signing you in. Please log in to continue setup.",
+        },
+      });
+    }
+
+    cookies.set("session", (await session).token, { path: "/" });
 
     const verifyEmailToken = new SignJWT({
       sub: email,
@@ -199,10 +217,24 @@ If you did not request this email, you can ignore it.
 This link will expire in 10 minutes.`,
     });
 
-    cookies.set("session", (await session).token, { path: "/" });
+    if (response.data) {
+      prisma.user.update({
+        where: {
+          id: username,
+        },
+        data: {
+          emailVerification: {
+            emailSent: true,
+            emailId: response.data.id,
+          },
+        },
+      });
+    }
 
     return {
-      success: true,
+      success: response.error
+        ? "An error occured while sending the verification email. You can resend the verification email later in profile settings."
+        : true,
       error: {
         email: null,
         username: null,

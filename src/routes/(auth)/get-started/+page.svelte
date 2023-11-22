@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     faCheck,
-    faCircle,
     faEnvelope,
     faKey,
     faUser,
@@ -27,7 +26,6 @@
 
   let password = "";
   let passwordOK = false;
-  let ignoreConfirm = true;
   let passwordGates = {
     lowercase: false,
     uppercase: false,
@@ -50,6 +48,10 @@
     passwordGates.length = password.length >= 8;
   }
 </script>
+
+<svelte:head>
+  <title>Get Started | StreetRelay</title>
+</svelte:head>
 
 {#if !form || !form.success}
   {#if form?.error.creation}
@@ -137,12 +139,17 @@
     >
   </p>
 {:else}
-  <h2>Verify Email</h2>
-  <p>
-    A link has been sent to the email you provided to verify it. The link will
-    expire in 5 minutes. By verifying your email, you can get notifications and
-    recover your account if you forget the password.
-  </p>
+  {#if form.success !== true}
+    <div class="error">{form.success}</div>
+    <p>For now, continue on to add your device.</p>
+  {:else}
+    <h2>Verify Email</h2>
+    <p>
+      A link has been sent to the email you provided to verify it. The link will
+      expire in 5 minutes. By verifying your email, you can get notifications
+      and recover your account if you forget the password.
+    </p>
+  {/if}
   <a
     href="/onboard-device"
     class="button">Continue</a
