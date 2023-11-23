@@ -43,7 +43,7 @@
       var(--background)
     );
     margin: 0;
-    padding: 3rem;
+    padding: 3rem 1.5rem 0;
   }
   .card {
     border: none;

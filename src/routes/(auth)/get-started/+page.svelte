@@ -131,13 +131,13 @@
 
   <button type="submit">Sign Up!</button>
 
-  <p style="display: block; margin-top: 0.4rem;">
-    Already a member? <a
+  <span class="links">
+    <a
       href="/login{data.redirectTo
         ? `?r=${encodeURIComponent(data.redirectTo)}`
-        : ''}">Log in</a
+        : ''}">Log In</a
     >
-  </p>
+  </span>
 {:else}
   {#if form.success !== true}
     <div class="error">{form.success}</div>
@@ -256,6 +256,16 @@
   }
   .error :global(*) {
     color: color-mix(in srgb, var(--error), var(--text) 5%);
+  }
+
+  .links {
+    margin-top: 0.8rem;
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
+  .links * {
+    display: block;
   }
 
   a.button {

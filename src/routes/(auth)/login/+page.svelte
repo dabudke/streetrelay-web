@@ -74,9 +74,18 @@
 {:else}<br />{/if}
 
 <button type="submit">Login</button>
-<p style="margin-bottom: 0">
-  Not a member yet? <a href="/get-started">Get started here</a>
-</p>
+
+<span class="links">
+  <a
+    href="/get-started{data.redirectTo
+      ? `?r=${encodeURIComponent(data.redirectTo)}`
+      : ''}"
+  >
+    Get Started</a
+  >
+  <span>&bull;</span>
+  <a href="/reset-password">Reset Password</a>
+</span>
 
 <style>
   label {
@@ -171,5 +180,21 @@
   }
   .hint.error {
     color: color-mix(in srgb, var(--text), var(--error) 60%);
+  }
+
+  .links {
+    margin-top: 0.8rem;
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
+  .links * {
+    display: block;
+  }
+  .links *:not(:last-child) {
+    margin-right: 0.5rem;
+  }
+  .links span {
+    color: var(--accent);
   }
 </style>
