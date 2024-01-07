@@ -1,11 +1,13 @@
-import { isValidSession, signToken } from "$lib/server/auth";
+import { isValidSession } from "$lib/server/auth";
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import prisma from "$lib/server/prisma";
 import resend from "$lib/server/mail";
-import { SignJWT } from "jose";
 import { hash } from "bcrypt";
 import { UAParser } from "ua-parser-js";
+import { createId } from "@paralleldrive/cuid2";
+import { EMAIL_BASE_URL } from "$env/static/private";
+import { DateTime } from "luxon";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const redirectTo = url.searchParams.get("r");
@@ -95,11 +97,6 @@ export const actions: Actions = {
     const existingEmail = prisma.user.findFirst({
       where: {
         email,
-        emailVerification: {
-          is: {
-            verified: true,
-          },
-        },
       },
     });
     const existingUsername = prisma.user.findFirst({
@@ -138,10 +135,8 @@ export const actions: Actions = {
 
     const user = prisma.user.create({
       data: {
-        email,
         id: username,
         password: await hash(password, 10),
-        emailVerification: {},
       },
     });
     try {
@@ -163,7 +158,7 @@ export const actions: Actions = {
     const session = prisma.session.create({
       data: {
         userID: username,
-        expires: new Date(Date.now() + 2_592_000_000),
+        expires: DateTime.now().plus({ days: 30 }).toJSDate(),
         lastSeen: new Date(),
         name: ua
           ? `${ua.getBrowser().name} on ${ua.getOS().name}`
@@ -191,16 +186,7 @@ export const actions: Actions = {
 
     cookies.set("session", (await session).token, { path: "/" });
 
-    const verifyEmailToken = new SignJWT({
-      sub: email,
-      aud: username,
-    })
-      .setProtectedHeader({
-        alg: "HS256",
-      })
-      .setExpirationTime("10 minutes");
-
-    const verifyEmailTokenString = await signToken(verifyEmailToken);
+    const emailVerificationID = createId();
 
     const response = await resend.emails.send({
       from: "StreetRelay <onboarding@resend.dev>",
@@ -209,31 +195,31 @@ export const actions: Actions = {
       html: `Welcome to StreetRelay! We're so glad you've decided to join!<br>
 To verify your email and opt-in to email notifications, click the link below:<br><br>
 
-<a href="https://localhost:5173/verify-email?t=${verifyEmailTokenString}">Verify Email</a><br><br>
+<a href="${EMAIL_BASE_URL}/verify-email?t=${emailVerificationID}">Verify Email</a><br><br>
 
 If you did not request this email, you can ignore it.<br>
 This link will expire in 10 minutes.`,
       text: `Welcome to StreetRelay! We're so glad you've decided to join!
 To verify your email and opt-in to email notifications, click the link below:
 
-https://localhost:5173/verify-email?t=${verifyEmailTokenString}
+${EMAIL_BASE_URL}/verify-email?t=${emailVerificationID}
 
 If you did not request this email, you can ignore it.
 This link will expire in 10 minutes.`,
     });
 
     if (response.data) {
-      prisma.user.update({
-        where: {
-          id: username,
-        },
-        data: {
-          emailVerification: {
-            emailSent: true,
+      prisma.emailVerification
+        .create({
+          data: {
             emailId: response.data.id,
+            expires: DateTime.now().plus({ minutes: 10 }).toJSDate(), // todo
+            token: emailVerificationID,
+            userId: username,
+            email: email,
           },
-        },
-      });
+        })
+        .catch(console.error);
     }
 
     return {

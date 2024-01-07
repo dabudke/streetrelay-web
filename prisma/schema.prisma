@@ -30,17 +30,21 @@ type Console {
   tokenIssued DateTime
 }
 
-type EmailVerification {
-  verified  Boolean @default(false)
-  emailSent Boolean @default(false)
-  emailId   String?
-  oldEmail  String?
+model EmailVerification {
+  token   String   @id @map("_id")
+  emailId String
+  email   String
+  expires DateTime
+  user    User     @relation(references: [id], fields: [userId])
+  userId  String   @unique
+
+  @@map("emailVerifications")
 }
 
 model User {
-  id                String            @id @map("_id")
-  email             String
-  emailVerification EmailVerification
+  id                String             @id @map("_id")
+  email             String?
+  emailVerification EmailVerification?
   password          String
   sessions          Session[]
   console           Console?
@@ -49,11 +53,11 @@ model User {
   mii      Bytes?
 
   starCount    Int      @default(0)
-  starredBy    User[]   @relation("StarredUsers", fields: [starredByIDs], references: [id])
-  starredByIDs String[]
+  starredBy    User[]   @relation("StarredUsers", fields: [starredByIds], references: [id])
+  starredByIds String[]
 
-  stars   User[]   @relation("StarredUsers", fields: [starIDs], references: [id])
-  starIDs String[]
+  stars   User[]   @relation("StarredUsers", fields: [starIds], references: [id])
+  starIds String[]
 
   inboundTags  Tag[] @relation("InboundTag")
   outboundTags Tag[] @relation("OutboundTag")
@@ -68,11 +72,11 @@ model User {
 model Tag {
   id String @id @default(cuid()) @map("_id")
 
-  user   User   @relation("InboundTag", fields: [userID], references: [id])
-  userID String
+  user   User   @relation("InboundTag", fields: [userId], references: [id])
+  userId String
 
-  target   User   @relation("OutboundTag", fields: [targetID], references: [id])
-  targetID String
+  target   User   @relation("OutboundTag", fields: [targetId], references: [id])
+  targetId String
 
   @@map("tags")
 }
@@ -80,11 +84,11 @@ model Tag {
 model GameData {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  user   User   @relation(fields: [userID], references: [id])
-  userID String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
-  game   Game   @relation(fields: [gameID], references: [id])
-  gameID String
+  game   Game   @relation(fields: [gameId], references: [id])
+  gameId String
 
   data Bytes
 

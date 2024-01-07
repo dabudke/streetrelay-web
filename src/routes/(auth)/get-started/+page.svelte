@@ -146,8 +146,8 @@
     <h2>Verify Email</h2>
     <p>
       A link has been sent to the email you provided to verify it. The link will
-      expire in 5 minutes. By verifying your email, you can get notifications
-      and recover your account if you forget the password.
+      expire in 10 minutes. By verifying your email, you can get email
+      notifications and recover your account if you forget the password.
     </p>
   {/if}
   <a
@@ -164,7 +164,9 @@
     padding: 0.5rem 0.7rem;
     display: flex;
     align-content: center;
-    transition: background 100ms ease-out, box-shadow 100ms ease-out,
+    transition:
+      background 100ms ease-out,
+      box-shadow 100ms ease-out,
       outline-color 100ms ease-out;
     outline: solid 0.1rem transparent;
     height: 2.5rem;
@@ -207,7 +209,9 @@
 
   button {
     border-radius: 0.3rem;
-    transition: background 100ms ease-out, color 100ms ease-out;
+    transition:
+      background 100ms ease-out,
+      color 100ms ease-out;
     background: var(--primary);
     color: var(--on-primary);
     border: none;
