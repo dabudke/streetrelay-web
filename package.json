@@ -4,7 +4,7 @@
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "dev": "prisma generate && vite dev",
+    "dev": "vite dev",
     "build": "prisma generate && vite build",
     "preview": "prisma generate && vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -17,6 +17,7 @@
     "@sveltejs/kit": "^1.20.4",
     "@types/bcrypt": "^5.0.0",
     "@types/luxon": "^3.3.7",
+    "@types/qrcode": "^1.5.5",
     "@types/ua-parser-js": "^0.7.37",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
@@ -32,12 +33,13 @@
   "type": "module",
   "dependencies": {
     "@paralleldrive/cuid2": "^2.2.2",
-    "@prisma/client": "^5.7.0",
+    "@prisma/client": "^5.8.0",
     "@sveltejs/adapter-vercel": "^3.0.3",
     "bcrypt": "^5.1.1",
     "jose": "^4.14.4",
     "luxon": "^3.4.4",
-    "prisma": "^5.7.0",
+    "prisma": "^5.8.0",
+    "qrcode": "^1.5.3",
     "resend": "^2.0.0",
     "ua-parser-js": "^1.0.35"
   },

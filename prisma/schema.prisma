@@ -26,8 +26,14 @@ model Session {
   @@map("sessions")
 }
 
-type Console {
-  tokenIssued DateTime
+model Console {
+  id            String   @id @default(cuid()) @map("_id")
+  deviceName    String?
+  user          User     @relation(fields: [userID], references: [id])
+  userID        String
+  tokenIssuedAt DateTime @default(now())
+
+  @@map("consoles")
 }
 
 model EmailVerification {
@@ -47,7 +53,7 @@ model User {
   emailVerification EmailVerification?
   password          String
   sessions          Session[]
-  console           Console?
+  console           Console[]
 
   nickname String?
   mii      Bytes?

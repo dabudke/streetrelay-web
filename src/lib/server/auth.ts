@@ -1,7 +1,8 @@
-import { SignJWT, jwtVerify } from "jose";
+import { SignJWT, errors, jwtVerify } from "jose";
 import prisma from "./prisma";
 import { KEY_SECRET } from "$env/static/private";
 import type { Session } from "@prisma/client";
+import { DateTime } from "luxon";
 
 const signingKey = new TextEncoder().encode(KEY_SECRET);
 
@@ -28,51 +29,104 @@ export async function isValidSession(
   return true;
 }
 
-// Session Token
-// sub - user
-// exp - 30 days
-// jti - token id
-// aud - "web"
+type TokenAuthenticationResult =
+  | {
+      success: true;
+      userID: string;
+      deviceID: string;
+    }
+  | {
+      success: false;
+      notFound?: true;
+      expired?: true;
+      invalid?: true;
+    };
 
-export async function authenticateToken(token: string): Promise<string | null> {
-  let payload;
+export async function authenticateToken(
+  token: string
+): Promise<TokenAuthenticationResult> {
   try {
-    payload = (
+    const payload = (
       await jwtVerify(token, signingKey, {
         maxTokenAge: "5 minutes",
         requiredClaims: ["sub"],
       })
     ).payload;
-  } catch {
-    return null;
+    return {
+      success: true,
+      deviceID: payload.jti ?? "",
+      userID: payload.sub ?? "",
+    };
+  } catch (e) {
+    if (e instanceof errors.JWTExpired)
+      return { success: false, expired: true };
+    else return { success: false, invalid: true };
   }
 }
 
 export async function authenticateTokenForRefresh(
   token: string
-): Promise<string | null> {
-  let payload;
+): Promise<TokenAuthenticationResult> {
   try {
-    payload = (
+    const payload = (
       await jwtVerify(token, signingKey, {
-        maxTokenAge: "30 days",
-        requiredClaims: ["sub"],
+        maxTokenAge: "14 days",
+        requiredClaims: ["jti", "sub"],
       })
     ).payload;
+
+    const device = await prisma.console.findUnique({
+      where: {
+        id: payload.jti,
+        userID: payload.sub,
+      },
+    });
+    if (!device) return { success: false, notFound: true };
+    if (DateTime.fromJSDate(device.tokenIssuedAt).toSeconds() !== payload.iat)
+      return { success: false, invalid: true };
+
+    // Authentication Barrier //
+
+    return {
+      success: true,
+      deviceID: device.id,
+      userID: device.userID,
+    };
   } catch (e) {
-    console.log(e);
-    return null;
+    if (e instanceof errors.JWTExpired)
+      return { success: false, expired: true };
+    return { success: false, invalid: true };
   }
-
-  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-  if (!user) return null;
-
-  if (user.console.tokenIssued.getTime() / 1000 !== payload.iat) return null;
-
-  return user.id;
 }
 
-export function signToken(token: SignJWT): Promise<string> {
+export async function issueToken(
+  userID: string,
+  deviceID: string
+): Promise<string> {
+  const issued = DateTime.now().startOf("second");
+
+  const token = new SignJWT({
+    jti: deviceID,
+    sub: userID,
+    iat: issued.toSeconds(),
+  }).setProtectedHeader({
+    alg: "HS256",
+  });
+
+  await prisma.console.upsert({
+    where: {
+      id: deviceID,
+    },
+    update: {
+      tokenIssuedAt: issued.toJSDate(),
+    },
+    create: {
+      id: deviceID,
+      userID,
+      tokenIssuedAt: issued.toJSDate(),
+    },
+  });
+
   return token.sign(signingKey);
 }
 
