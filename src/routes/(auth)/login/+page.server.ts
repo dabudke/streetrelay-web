@@ -56,9 +56,17 @@ export const actions: Actions = {
         },
       });
     }
-    const user = await prisma.user.findUnique({
-      where: { id: usernameOrEmail },
-    });
+    const user = /^.+@.+\.(?:.){2,6}$/.test(usernameOrEmail)
+      ? await prisma.user.findFirst({
+          where: {
+            email: usernameOrEmail,
+            emailVerification: null,
+          },
+        })
+      : await prisma.user.findUnique({
+          where: { id: usernameOrEmail },
+        });
+
     if (!user) {
       return fail(400, {
         username: usernameOrEmail,
