@@ -6,27 +6,35 @@ import { DateTime } from "luxon";
 
 const signingKey = new TextEncoder().encode(KEY_SECRET);
 
-export async function isValidSession(session: Session | null): Promise<boolean>;
-export async function isValidSession(
-  sessionToken: string | undefined
-): Promise<boolean>;
-export async function isValidSession(
-  sessionOrToken: Session | string | null | undefined
-): Promise<boolean> {
-  let session;
+type SessionVerificationResult =
+  | {
+      success: true;
+      userID: string;
+    }
+  | {
+      success: false;
+      loggedOut?: true;
+      noToken?: true;
+      expired?: true;
+      userID?: string;
+    };
 
-  if (typeof sessionOrToken == "string") {
-    session = await prisma.session.findUnique({
-      where: { token: sessionOrToken },
-    });
-  } else {
-    session = sessionOrToken;
-  }
+export async function authenticateSession(
+  token: string | undefined
+): Promise<SessionVerificationResult> {
+  if (!token) return { success: false, noToken: true };
 
-  if (!session) return false;
-  if (session.expires <= new Date()) return false;
+  const session = await prisma.session.findUnique({
+    where: { token },
+  });
+  if (!session) return { success: false, loggedOut: true };
+  if (session.expires <= new Date())
+    return { success: false, expired: true, userID: session.userID };
 
-  return true;
+  return {
+    success: true,
+    userID: session.userID,
+  };
 }
 
 type TokenAuthenticationResult =

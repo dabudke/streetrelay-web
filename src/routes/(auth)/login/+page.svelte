@@ -3,7 +3,6 @@
   import Fa from "svelte-fa";
   import {
     faKey,
-    faUser,
     faUserCircle,
     faWarning,
   } from "@fortawesome/free-solid-svg-icons";
@@ -29,11 +28,7 @@
 {#if data.error}
   <div class="error">
     <span class="icon-wrapper"><Fa icon={faWarning} /></span>
-    {#if data.error == "expired"}
-      <p>Session expired, please log in again.</p>
-    {:else if data.error == "invalid"}
-      <p>Invalid session, please log in again.</p>
-    {/if}
+    <p>{data.error}</p>
   </div>
 {/if}
 
@@ -47,6 +42,7 @@
     name="usernameOrEmail"
     autocomplete="username"
     placeholder="Username or Email"
+    aria-label="Username or Email"
     bind:value={usernameOrEmail}
     on:change={() => {
       if (form !== null) form.error.usernameOrEmail = null;
@@ -64,6 +60,7 @@
     name="password"
     autocomplete="current-password"
     placeholder="Password"
+    aria-label="Password"
     on:change={() => {
       if (form !== null) form.error.password = null;
     }}
@@ -95,7 +92,9 @@
     padding: 0.5rem 0.7rem;
     display: flex;
     align-content: center;
-    transition: background 100ms ease-out, box-shadow 100ms ease-out,
+    transition:
+      background 100ms ease-out,
+      box-shadow 100ms ease-out,
       outline-color 100ms ease-out;
     outline: solid 0.1rem transparent;
     height: 2.5rem;
@@ -138,7 +137,9 @@
 
   button {
     border-radius: 0.3rem;
-    transition: background 100ms ease-out, color 100ms ease-out;
+    transition:
+      background 100ms ease-out,
+      color 100ms ease-out;
     background: var(--primary);
     color: var(--on-primary);
     border: none;
@@ -152,6 +153,7 @@
   div.error {
     display: flex;
     justify-content: center;
+    align-content: center;
     background: var(--error);
     width: fit-content;
     padding: 1rem 1rem;
@@ -161,9 +163,12 @@
     margin-bottom: 1rem;
   }
   div.error * {
-    margin: auto;
+    margin: 0;
     display: block;
     color: var(--on-error);
+  }
+  div.error *:not(:last-child) {
+    margin-right: 0.6rem;
   }
   .icon-wrapper {
     margin-top: 0.06rem;

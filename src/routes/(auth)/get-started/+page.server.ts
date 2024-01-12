@@ -1,4 +1,4 @@
-import { isValidSession } from "$lib/server/auth";
+import { authenticateSession } from "$lib/server/auth";
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 import prisma from "$lib/server/prisma";
@@ -12,14 +12,11 @@ import { DateTime } from "luxon";
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const redirectTo = url.searchParams.get("r");
 
-  const sessionToken = cookies.get("session") ?? "";
-  const session = await prisma.session.findUnique({
-    where: { token: sessionToken },
-  });
+  const { success: loggedIn } = await authenticateSession(
+    cookies.get("session")
+  );
 
-  if (await isValidSession(session)) {
-    throw redirect(303, redirectTo ?? "/");
-  }
+  if (loggedIn) throw redirect(303, redirectTo ?? "/");
 
   return { redirectTo };
 };

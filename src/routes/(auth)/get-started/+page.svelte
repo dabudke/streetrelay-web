@@ -70,6 +70,7 @@
       name="email"
       autocomplete="email"
       placeholder="Email Address"
+      aria-label="Email address"
       on:change={() => {
         if (form !== null) form.error.email = null;
       }}
@@ -86,6 +87,7 @@
       name="username"
       autocomplete="username"
       placeholder="Username"
+      aria-label="Username"
       on:change={() => {
         if (form !== null) form.error.username = null;
       }}
@@ -107,6 +109,7 @@
       name="password"
       autocomplete="new-password"
       placeholder="Create Password"
+      aria-label="New password"
       bind:value={password}
       on:change={() => {
         onPasswordChange();

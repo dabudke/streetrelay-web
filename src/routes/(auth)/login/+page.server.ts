@@ -1,6 +1,6 @@
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
-import { isValidSession } from "$lib/server/auth";
+import { authenticateSession } from "$lib/server/auth";
 import prisma from "$lib/server/prisma";
 import * as bcrypt from "bcrypt";
 import { UAParser } from "ua-parser-js";
@@ -9,22 +9,25 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
   const redirectTo = url.searchParams.get("r");
 
   const sessionToken = cookies.get("session") ?? "";
-  const session = await prisma.session.findUnique({
-    where: { token: sessionToken },
-  });
+  const sessionVerification = await authenticateSession(sessionToken);
 
-  if (await isValidSession(session)) {
-    return redirect(303, redirectTo ?? "/");
-  }
+  if (sessionVerification.success) throw redirect(303, redirectTo ?? "/");
 
-  if (session) {
-    return { username: session.userID, error: "expired", redirectTo };
-  }
+  const { expired, loggedOut, userID } = sessionVerification;
 
-  if (sessionToken) {
-    cookies.set("session", "");
-    return { username: "", error: "invalid", redirectTo };
-  }
+  if (expired)
+    return {
+      username: userID ?? "",
+      error: "Your session has expired, please try again.",
+      redirectTo,
+    };
+  if (loggedOut)
+    return {
+      username: "",
+      error:
+        "You have been logged out from another device, please log in again.",
+      redirectTo,
+    };
 
   return { username: "", redirectTo };
 };
