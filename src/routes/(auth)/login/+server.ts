@@ -1,38 +1,31 @@
 import { error, json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SignJWT } from "jose";
-import { authenticateTokenForRefresh, signToken } from "$lib/server/auth";
-import prisma from "$lib/server/prisma";
+import { authenticateTokenForRefresh, issueToken } from "$lib/server/auth";
 
 export const GET: RequestHandler = async ({ request }) => {
-  const tokenHeader = request.headers.get("Authorization");
-  if (!tokenHeader) throw error(401);
+  const token = request.headers.get("Authorization");
+  if (!token) {
+    console.log("Token not provided");
+    throw error(401, { message: "Token not provided" });
+  }
 
-  const [authType, token] = tokenHeader.split(" ");
-  if (authType != "JWT") throw error(400);
-  console.log(token);
-
-  const user = await authenticateTokenForRefresh(token);
-  if (!user) throw error(401);
+  const tokenData = await authenticateTokenForRefresh(token);
+  if (!tokenData.success) {
+    if (tokenData.expired) throw error(401, { message: "Token expired" });
+    if (tokenData.invalid) throw error(401, { message: "Token invalid" });
+    if (tokenData.notFound)
+      throw error(401, { message: "Device or user not found" });
+    throw error(401, { message: "Unknown error" });
+  }
 
   /* Authentication Barrier */
 
-  const issued = Math.floor(Date.now() / 1000);
-  const newToken = new SignJWT({
-    iat: issued,
-    sub: user,
-  }).setProtectedHeader({
-    alg: "HS256",
-  });
+  const newToken = await issueToken(tokenData.userID, tokenData.deviceID).catch(
+    (e) => {
+      console.error(e);
+      throw error(500, { message: "Could not issue new token" });
+    }
+  );
 
-  const updateSuccess = await prisma.user
-    .update({
-      where: { id: user },
-      data: { console: { tokenIssued: new Date(issued * 1000) } },
-    })
-    .then(() => true)
-    .catch(() => false);
-
-  if (updateSuccess) return json(await signToken(newToken));
-  else throw error(500);
+  return json(newToken);
 };
