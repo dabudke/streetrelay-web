@@ -1,7 +1,6 @@
 import { SignJWT, errors, jwtVerify } from "jose";
 import prisma from "./prisma";
 import { KEY_SECRET } from "$env/static/private";
-import type { Session } from "@prisma/client";
 import { DateTime } from "luxon";
 
 const signingKey = new TextEncoder().encode(KEY_SECRET);
@@ -10,6 +9,7 @@ type SessionVerificationResult =
   | {
       success: true;
       userID: string;
+      sessionToken: string;
     }
   | {
       success: false;
@@ -34,6 +34,7 @@ export async function authenticateSession(
   return {
     success: true,
     userID: session.userID,
+    sessionToken: session.token,
   };
 }
 
