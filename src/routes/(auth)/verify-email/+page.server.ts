@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ url }) => {
   // Email verified!
 
   try {
-    prisma.user.update({
+    await prisma.user.update({
       where: {
         id: verification.userId,
       },
