@@ -13,7 +13,7 @@ datasource db {
 model Session {
   token String @id @default(cuid()) @map("_id")
 
-  user   User   @relation(fields: [userID], references: [id])
+  user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
   userID String
 
   name   String
@@ -29,7 +29,7 @@ model Session {
 model Console {
   id            String   @id @default(cuid()) @map("_id")
   deviceName    String?
-  user          User     @relation(fields: [userID], references: [id])
+  user          User     @relation(fields: [userID], references: [id], onDelete: Cascade)
   userID        String
   tokenIssuedAt DateTime @default(now())
 
@@ -41,7 +41,7 @@ model EmailVerification {
   emailId String
   email   String
   expires DateTime
-  user    User     @relation(references: [id], fields: [userId])
+  user    User     @relation(references: [id], fields: [userId], onDelete: Cascade)
   userId  String   @unique
 
   @@map("emailVerifications")
@@ -78,10 +78,10 @@ model User {
 model Tag {
   id String @id @default(cuid()) @map("_id")
 
-  user   User   @relation("InboundTag", fields: [userId], references: [id])
+  user   User   @relation("InboundTag", fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  target   User   @relation("OutboundTag", fields: [targetId], references: [id])
+  target   User   @relation("OutboundTag", fields: [targetId], references: [id], onDelete: Cascade)
   targetId String
 
   @@map("tags")
@@ -90,7 +90,7 @@ model Tag {
 model GameData {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
   game   Game   @relation(fields: [gameId], references: [id])
