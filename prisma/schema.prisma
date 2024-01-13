@@ -72,6 +72,10 @@ model User {
 
   games GameData[]
 
+  isModerator Boolean         @default(false)
+  reportedBy  ContentReport[] @relation(name: "Reported") @ignore
+  reporterOf  ContentReport[] @relation(name: "Reporter") @ignore
+
   @@map("users")
 }
 
@@ -102,10 +106,32 @@ model GameData {
 }
 
 model Game {
-  id    String     @id @map("_id")
-  title String
-  icon  String     @default("https://via.placeholder.com/48.png")
-  data  GameData[]
+  id      String          @id @map("_id")
+  title   String?
+  icon    String?
+  data    GameData[]
+  reports ContentReport[] @ignore
 
   @@map("games")
 }
+
+enum ContentReportType {
+  USER
+  GAME
+}
+
+model ContentReport {
+  id         String            @id @map("_id") @db.ObjectId
+  type       ContentReportType
+  reason     String
+  reportedAt DateTime          @default(now())
+  reporter   User              @relation(name: "Reporter", references: [id], fields: [reporterID], onDelete: NoAction)
+  reporterID String
+
+  offendingUser   User?   @relation(name: "Reported", references: [id], fields: [offendingUserID])
+  offendingUserID String?
+
+  offendingGame   Game?   @relation(references: [id], fields: [offendingGameID])
+  offendingGameID String?
+
+  @@map("contentReports")
