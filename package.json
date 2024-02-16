@@ -33,12 +33,12 @@
   "type": "module",
   "dependencies": {
     "@paralleldrive/cuid2": "^2.2.2",
-    "@prisma/client": "^5.8.0",
+    "@prisma/client": "^5.9.1",
     "@sveltejs/adapter-vercel": "^3.0.3",
     "bcrypt": "^5.1.1",
     "jose": "^4.14.4",
     "luxon": "^3.4.4",
-    "prisma": "^5.8.0",
+    "prisma": "^5.9.1",
     "qrcode": "^1.5.3",
     "resend": "^2.0.0",
     "ua-parser-js": "^1.0.35"

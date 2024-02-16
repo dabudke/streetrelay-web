@@ -38,11 +38,11 @@ model Console {
 
 model EmailVerification {
   token   String   @id @map("_id")
-  emailId String
+  emailID String
   email   String
   expires DateTime
-  user    User     @relation(references: [id], fields: [userId], onDelete: Cascade)
-  userId  String   @unique
+  user    User     @relation(references: [id], fields: [userID], onDelete: Cascade)
+  userID  String   @unique
 
   @@map("emailVerifications")
 }
@@ -55,44 +55,49 @@ model User {
   sessions          Session[]
   console           Console[]
 
-  nickname String?
-  mii      Bytes?
+  nickname       String?
+  profilePicture String  @default("/img/user.jpg")
+  bio            String  @default("")
 
-  starCount    Int      @default(0)
-  starredBy    User[]   @relation("StarredUsers", fields: [starredByIds], references: [id])
-  starredByIds String[]
+  starredBy    User[]   @relation("StarredUsers", fields: [starredByIDs], references: [id])
+  starredByIDs String[]
 
-  stars   User[]   @relation("StarredUsers", fields: [starIds], references: [id])
-  starIds String[]
+  starredUsers   User[]   @relation("StarredUsers", fields: [starredUserIDs], references: [id])
+  starredUserIDs String[]
 
   inboundTags  Tag[] @relation("InboundTag")
   outboundTags Tag[] @relation("OutboundTag")
 
-  tags Int @default(0)
-
   games GameData[]
 
   isModerator Boolean         @default(false)
-  reportedBy  ContentReport[] @relation(name: "Reported") @ignore
-  reporterOf  ContentReport[] @relation(name: "Reporter") @ignore
+  reportedBy  ContentReport[] @relation(name: "Reported")
+  reporterOf  ContentReport[] @relation(name: "Reporter")
 
   @@map("users")
 }
 
 model Tag {
-  id String @id @default(cuid()) @map("_id")
+  id       String   @id @default(cuid()) @map("_id")
+  taggedAt DateTime @default(now())
 
-  user   User   @relation("InboundTag", fields: [userId], references: [id], onDelete: Cascade)
-  userId String
+  /// from
+  user   User   @relation("OutboundTag", fields: [userID], references: [id], onDelete: Cascade)
+  userID String
 
-  target   User   @relation("OutboundTag", fields: [targetId], references: [id], onDelete: Cascade)
-  targetId String
+  /// to
+  target   User   @relation("InboundTag", fields: [targetID], references: [id], onDelete: Cascade)
+  targetID String
+
+  games   GameData[] @relation(fields: [gameIDs], references: [id])
+  gameIDs String[]   @db.ObjectId
 
   @@map("tags")
 }
 
 model GameData {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  uploadedAt DateTime @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
@@ -102,6 +107,9 @@ model GameData {
 
   data Bytes
 
+  tags   Tag[]    @relation(fields: [tagIDs], references: [id])
+  tagIDs String[]
+
   @@map("data")
 }
 
@@ -110,7 +118,7 @@ model Game {
   title   String?
   icon    String?
   data    GameData[]
-  reports ContentReport[] @ignore
+  reports ContentReport[]
 
   @@map("games")
 }
@@ -135,3 +143,4 @@ model ContentReport {
   offendingGameID String?
 
   @@map("contentReports")
+}
