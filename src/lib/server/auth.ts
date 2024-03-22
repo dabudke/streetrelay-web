@@ -2,6 +2,7 @@ import { SignJWT, errors, jwtVerify } from "jose";
 import prisma from "./prisma";
 import { KEY_SECRET } from "$env/static/private";
 import { DateTime } from "luxon";
+import { isCuid } from "@paralleldrive/cuid2";
 
 const signingKey = new TextEncoder().encode(KEY_SECRET);
 
@@ -15,6 +16,7 @@ type SessionVerificationResult =
       success: false;
       loggedOut?: true;
       noToken?: true;
+      invalid?: true;
       expired?: true;
       userID?: string;
     };
@@ -23,6 +25,7 @@ export async function authenticateSession(
   token: string | undefined
 ): Promise<SessionVerificationResult> {
   if (!token) return { success: false, noToken: true };
+  if (!isCuid(token)) return { success: false, invalid: true }
 
   const session = await prisma.session.findUnique({
     where: { token },
@@ -46,14 +49,19 @@ type TokenAuthenticationResult =
     }
   | {
       success: false;
+      noToken?: true;
       notFound?: true;
       expired?: true;
       invalid?: true;
+      userID?: string;
+      deviceID?: string;
     };
 
 export async function authenticateToken(
-  token: string
+  token: string | null
 ): Promise<TokenAuthenticationResult> {
+  if (!token) return { success: false, noToken: true };
+
   try {
     const payload = (
       await jwtVerify(token, signingKey, {
@@ -61,6 +69,7 @@ export async function authenticateToken(
         requiredClaims: ["sub"],
       })
     ).payload;
+    if (!isCuid(payload.jti ?? "")) return { success: false, invalid: true };
     return {
       success: true,
       deviceID: payload.jti ?? "",
