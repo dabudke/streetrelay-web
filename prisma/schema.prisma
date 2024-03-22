@@ -89,8 +89,8 @@ model Tag {
   target   User   @relation("InboundTag", fields: [targetID], references: [id], onDelete: Cascade)
   targetID String
 
-  games   GameData[] @relation(fields: [gameIDs], references: [id])
-  gameIDs String[]   @db.ObjectId
+  gameData    GameData[] @relation(fields: [gameDataIDs], references: [id])
+  gameDataIDs String[]   @db.ObjectId
 
   @@map("tags")
 }
@@ -99,11 +99,11 @@ model GameData {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   uploadedAt DateTime @default(now())
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String
+  user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
+  userID String
 
-  game   Game   @relation(fields: [gameId], references: [id])
-  gameId String
+  game   Game   @relation(fields: [gameID], references: [id])
+  gameID String
 
   data Bytes
 
@@ -116,7 +116,7 @@ model GameData {
 model Game {
   id      String          @id @map("_id")
   title   String?
-  icon    String?
+  icon    String          @default("/assets/img/game.png")
   data    GameData[]
   reports ContentReport[]
 
