@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Comfortaa&family=Nunito&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap");
 
 * {
   font-family: var(--body-family);
@@ -14,6 +15,7 @@ h4,
 h5,
 h6 {
   font-family: var(--title-family);
+  font-size: 1.2rem;
 }
 
 :any-link {
@@ -40,8 +42,8 @@ body {
   --error: rgb(212, 46, 28);
   --on-error: var(--background);
 
-  --body-family: Nunito, sans-serif;
-  --title-family: Comfortaa, sans-serif;
+  --body-family: "Nunito Sans", sans-serif;
+  --title-family: Urbanist, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
