@@ -6,8 +6,8 @@ import resend from "$lib/server/mail";
 import { hash } from "bcrypt";
 import { UAParser } from "ua-parser-js";
 import { createId } from "@paralleldrive/cuid2";
-import { EMAIL_BASE_URL } from "$env/static/private";
 import { DateTime } from "luxon";
+import { getStartedEmailHTML, getStartedEmailText } from "$lib/server/emails";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const redirectTo = url.searchParams.get("r");
@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, cookies, getClientAddress }) => {
+  default: async ({ request, cookies, getClientAddress, url }) => {
     const formData = await request.formData();
 
     const email = formData.get("email") as string;
@@ -189,30 +189,18 @@ export const actions: Actions = {
       from: "StreetRelay <onboarding@resend.dev>",
       to: email,
       subject: "Welcome to StreetRelay",
-      html: `Welcome to StreetRelay! We're so glad you've decided to join!<br>
-To verify your email and opt-in to email notifications, click the link below:<br><br>
-
-<a href="${EMAIL_BASE_URL}/verify-email?t=${emailVerificationID}">Verify Email</a><br><br>
-
-If you did not request this email, you can ignore it.<br>
-This link will expire in 10 minutes.`,
-      text: `Welcome to StreetRelay! We're so glad you've decided to join!
-To verify your email and opt-in to email notifications, click the link below:
-
-${EMAIL_BASE_URL}/verify-email?t=${emailVerificationID}
-
-If you did not request this email, you can ignore it.
-This link will expire in 10 minutes.`,
+      html: getStartedEmailHTML(url.origin, emailVerificationID),
+      text: getStartedEmailText(url.origin, emailVerificationID),
     });
 
     if (response.data) {
       prisma.emailVerification
         .create({
           data: {
-            emailId: response.data.id,
+            emailID: response.data.id,
             expires: DateTime.now().plus({ minutes: 10 }).toJSDate(), // todo
             token: emailVerificationID,
-            userId: username,
+            userID: username,
             email: email,
           },
         })

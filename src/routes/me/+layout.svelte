@@ -9,7 +9,6 @@
     faSignOut,
     faDisplay,
   } from "@fortawesome/free-solid-svg-icons";
-  import { faUser as faUserOutline } from "@fortawesome/free-regular-svg-icons";
   import type { LayoutData } from "./$types";
 
   export let data: LayoutData;
