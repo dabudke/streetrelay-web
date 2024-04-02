@@ -4,7 +4,8 @@ import { KEY_SECRET } from "$env/static/private";
 import { DateTime } from "luxon";
 import { isCuid } from "@paralleldrive/cuid2";
 
-const signingKey = new TextEncoder().encode(KEY_SECRET);
+export const signingKey = new TextEncoder().encode(KEY_SECRET);
+export const resetPasswordURI = "strl:reset-password";
 
 type SessionVerificationResult =
   | {
@@ -25,7 +26,7 @@ export async function authenticateSession(
   token: string | undefined
 ): Promise<SessionVerificationResult> {
   if (!token) return { success: false, noToken: true };
-  if (!isCuid(token)) return { success: false, invalid: true }
+  if (!isCuid(token)) return { success: false, invalid: true };
 
   const session = await prisma.session.findUnique({
     where: { token },

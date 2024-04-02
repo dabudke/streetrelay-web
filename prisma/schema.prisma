@@ -54,6 +54,7 @@ model User {
   password          String
   sessions          Session[]
   console           Console[]
+  emailVerified Boolean   @default(false)
 
   nickname       String?
   profilePicture String  @default("/img/user.jpg")
@@ -116,7 +117,7 @@ model GameData {
 model Game {
   id      String          @id @map("_id")
   title   String?
-  icon    String          @default("/assets/img/game.png")
+  icon    String          @default("/img/game.png")
   data    GameData[]
   reports ContentReport[]
 
