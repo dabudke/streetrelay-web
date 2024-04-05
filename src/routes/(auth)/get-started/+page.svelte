@@ -1,13 +1,17 @@
 <script lang="ts">
+  import { applyAction, enhance } from "$app/forms";
   import {
     faCheck,
     faEnvelope,
     faKey,
     faUser,
-    faWarning,
     faXmark,
   } from "@fortawesome/free-solid-svg-icons";
   import Fa from "svelte-fa";
+  import InfoBox from "../InfoBox.svelte";
+  import Input from "../Input.svelte";
+  import Links from "../Links.svelte";
+  import SubmitButton from "../SubmitButton.svelte";
   import type { ActionData, PageData, Snapshot } from "./$types";
 
   export let data: PageData;
@@ -21,11 +25,13 @@
     },
   };
 
+  let submitting: boolean = false;
+
   let username: string;
   let email: string;
 
   let password = "";
-  let passwordOK = false;
+  let passwordOK = true;
   let passwordGates = {
     lowercase: false,
     uppercase: false,
@@ -54,35 +60,44 @@
 </svelte:head>
 
 {#if !form || !form.success}
-  {#if form?.error.creation}
-    <div class="error">
-      <Fa icon={faWarning} />
-      <p>{form.error.creation}</p>
-    </div>
-  {/if}
+  <form
+    method="post"
+    use:enhance={({ formData, cancel }) => {
+      submitting = true;
 
-  <h1>Welcome to StreetRelay!</h1>
-  <p>Create an account and join the fun!</p>
-  <label class:invalid={form?.error.email}>
-    <Fa icon={faEnvelope} />
-    <input
+      return async ({ result }) => {
+        submitting = false;
+        await applyAction(result);
+      };
+    }}
+  >
+    {#if form?.error.creation}
+      <InfoBox>
+        {form.error.creation}
+      </InfoBox>
+    {/if}
+
+    <h1>Welcome to StreetRelay!</h1>
+    <p>Create an account and join the fun!</p>
+    <Input
+      invalid={!!form?.error.email}
+      icon={faEnvelope}
       type="email"
       name="email"
       autocomplete="email"
       placeholder="Email Address"
-      aria-label="Email address"
+      aria-label="Email Address"
       on:change={() => {
         if (form !== null) form.error.email = null;
       }}
     />
-  </label>
-  {#if form?.error.email}
-    <p class="hint invalid">{form?.error.email}</p>
-  {:else}<br />{/if}
+    {#if form?.error.email}
+      <p class="hint invalid">{form?.error.email}</p>
+    {:else}<br />{/if}
 
-  <label class:invalid={form?.error.username}>
-    <Fa icon={faUser} />
-    <input
+    <Input
+      invalid={!!form?.error.username}
+      icon={faUser}
       type="text"
       name="username"
       autocomplete="username"
@@ -92,58 +107,58 @@
         if (form !== null) form.error.username = null;
       }}
     />
-  </label>
-  {#if form?.error.username}
-    <p class="hint invalid">{form?.error.username}</p>
-  {:else}
-    <p class="hint">
-      Must be 3-30 characters long, and only contain uppercase and lowercase
-      letters, numbers, and underscores.
-    </p>
-  {/if}
+    {#if form?.error.username}
+      <p class="hint invalid">{form?.error.username}</p>
+    {:else}
+      <p class="hint">
+        Must be 3-30 characters long, and only contain uppercase and lowercase
+        letters, numbers, and underscores.
+      </p>
+    {/if}
 
-  <label class:invalid={passwordOK || form?.error.password}>
-    <Fa icon={faKey} />
-    <input
+    <Input
+      invalid={!passwordOK || !!form?.error.password}
+      icon={faKey}
       type="password"
       name="password"
       autocomplete="new-password"
       placeholder="Create Password"
-      aria-label="New password"
+      aria-label="New Password"
       bind:value={password}
       on:change={() => {
+        if (form !== null) form.error.password = false;
         onPasswordChange();
-        if (form) form.error.password = false;
-        passwordOK = Object.values(passwordGates).some((v) => v === false);
+        passwordOK = Object.values(passwordGates).every((v) => v === true);
       }}
       on:input={onPasswordChange}
     />
-  </label>
-  <p class="hint">
-    {#each Object.entries(passwordGates) as [name, fulfilled]}
-      <span class:not-fulfilled={!fulfilled}>
-        <Fa
-          icon={fulfilled ? faCheck : faXmark}
-          size="s"
-          color="currentColor"
-        />
-        {passwordGateTexts[name]}
-      </span>
-    {/each}
-  </p>
+    <p class="hint">
+      {#each Object.entries(passwordGates) as [name, fulfilled]}
+        <span class:not-fulfilled={!fulfilled}>
+          <Fa
+            icon={fulfilled ? faCheck : faXmark}
+            size="1x"
+            color="currentColor"
+            fw
+          />
+          {passwordGateTexts[name]}
+        </span>
+      {/each}
+    </p>
 
-  <button type="submit">Sign Up!</button>
+    <SubmitButton {submitting}>Sign Up!</SubmitButton>
 
-  <span class="links">
-    <a
-      href="/login{data.redirectTo
-        ? `?r=${encodeURIComponent(data.redirectTo)}`
-        : ''}">Log In</a
-    >
-  </span>
+    <Links>
+      <a
+        href="/login{data.redirectTo
+          ? `?r=${encodeURIComponent(data.redirectTo)}`
+          : ''}">Log In</a
+      >
+    </Links>
+  </form>
 {:else}
   {#if form.success !== true}
-    <div class="error">{form.success}</div>
+    <InfoBox>{form.success}</InfoBox>
     <p>For now, continue on to add your device.</p>
   {:else}
     <h2>Verify Email</h2>
@@ -160,74 +175,6 @@
 {/if}
 
 <style>
-  label {
-    background: var(--secondary);
-    border-radius: 0.3rem;
-    width: 100%;
-    padding: 0.5rem 0.7rem;
-    display: flex;
-    align-content: center;
-    transition:
-      background 100ms ease-out,
-      box-shadow 100ms ease-out,
-      outline-color 100ms ease-out;
-    outline: solid 0.1rem transparent;
-    height: 2.5rem;
-  }
-  label.invalid {
-    background: color-mix(in srgb, var(--error), var(--background) 75%);
-  }
-  label:hover {
-    box-shadow: 0 3px 10px -2px rgba(0, 0, 0, 0.4);
-  }
-  label:focus-within {
-    background: transparent;
-    box-shadow: none;
-    outline-color: var(--primary);
-  }
-  label.invalid:focus-within {
-    outline-color: var(--error);
-  }
-  label :global(*),
-  label input::placeholder {
-    color: color-mix(in srgb, var(--text), var(--background) 30%);
-    margin: auto 0;
-    transition: color 100ms ease-out;
-  }
-  label.invalid :global(*),
-  label.invalid input::placeholder {
-    color: color-mix(in srgb, var(--error), var(--on-secondary) 75%);
-  }
-  label:focus-within :global(*) {
-    color: var(--text);
-  }
-
-  input {
-    background: transparent;
-    border: none;
-    margin-left: 0.6rem;
-    outline: none;
-    flex-grow: 1;
-  }
-
-  button {
-    border-radius: 0.3rem;
-    transition:
-      background 100ms ease-out,
-      color 100ms ease-out;
-    background: var(--primary);
-    color: var(--on-primary);
-    border: none;
-    width: 100%;
-    height: 2.5rem;
-  }
-  button :global(*) {
-    color: var(--on-primary);
-  }
-  button:hover {
-    background: color-mix(in srgb, var(--primary), var(--on-primary) 20%);
-  }
-
   .hint {
     display: block;
     margin: 0.3rem 0.3rem 0.8rem;
@@ -240,39 +187,13 @@
     align-items: center;
     margin-top: 0.2rem;
   }
-  .hint :global(svg) {
-    margin-bottom: 0.1rem;
-    margin-right: 0.3rem;
+  .hint span :global(*) {
+    margin-right: 0.1rem;
   }
   .hint.invalid,
   .not-fulfilled,
   .not-fulfilled :global(*) {
     color: color-mix(in srgb, var(--text), var(--error) 60%);
-  }
-
-  .error {
-    display: flex;
-    padding: 1rem 1.5rem;
-    border-radius: 0.7rem;
-    margin-bottom: 1rem;
-    align-items: center;
-    background-color: color-mix(in srgb, var(--background), var(--error) 7%);
-  }
-  .error p {
-    margin: 0 0 0 0.75rem;
-  }
-  .error :global(*) {
-    color: color-mix(in srgb, var(--error), var(--text) 5%);
-  }
-
-  .links {
-    margin-top: 0.8rem;
-    display: flex;
-    width: 100%;
-    justify-content: center;
-  }
-  .links * {
-    display: block;
   }
 
   a.button {

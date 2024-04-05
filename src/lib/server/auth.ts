@@ -6,6 +6,7 @@ import { isCuid } from "@paralleldrive/cuid2";
 
 export const signingKey = new TextEncoder().encode(KEY_SECRET);
 export const resetPasswordURI = "strl:reset-password";
+export const verifyEmailURI = "strl:verify-email";
 
 type SessionVerificationResult =
   | {

@@ -1,5 +1,8 @@
 // export const recoveryEmailAddress = "StreetRelay <recovery@emails.streetrelay.me>";
 export const recoveryEmailAddress = "StreetRelay <onboarding@resend.dev>";
+// export const verificationEmailAddress = "StreetRelay <verify@emails.streetrelay.me>";
+export const verificationEmailAddress = "StreetRelay <onboarding@resend.dev>";
+
 export const getStartedEmailHTML = (
   origin: string,
   verificationToken: string

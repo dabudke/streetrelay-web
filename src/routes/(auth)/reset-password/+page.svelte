@@ -9,7 +9,7 @@
     faWarning,
     faXmark,
   } from "@fortawesome/free-solid-svg-icons";
-  import { enhance } from "$app/forms";
+  import { applyAction, enhance } from "$app/forms";
   import Input from "../Input.svelte";
   import InfoBox from "../InfoBox.svelte";
   import SubmitButton from "../SubmitButton.svelte";
@@ -80,9 +80,9 @@
           action="?/changePassword"
           use:enhance={() => {
             submitting = true;
-            return ({ update }) => {
+            return async ({ result }) => {
               submitting = false;
-              update();
+              await applyAction(result);
             };
           }}
         >

@@ -1,13 +1,21 @@
-import { authenticateSession } from "$lib/server/auth";
-import { fail, redirect } from "@sveltejs/kit";
-import type { Actions, PageServerLoad } from "./$types";
-import prisma from "$lib/server/prisma";
+import {
+  authenticateSession,
+  signingKey,
+  verifyEmailURI,
+} from "$lib/server/auth";
+import {
+  getStartedEmailHTML,
+  getStartedEmailText,
+  verificationEmailAddress,
+} from "$lib/server/emails";
 import resend from "$lib/server/mail";
+import prisma from "$lib/server/prisma";
+import { fail, redirect } from "@sveltejs/kit";
 import { hash } from "bcrypt";
-import { UAParser } from "ua-parser-js";
-import { createId } from "@paralleldrive/cuid2";
+import { SignJWT } from "jose";
 import { DateTime } from "luxon";
-import { getStartedEmailHTML, getStartedEmailText } from "$lib/server/emails";
+import { UAParser } from "ua-parser-js";
+import type { PageServerLoad, Actions } from "./$types";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const redirectTo = url.searchParams.get("r");
@@ -94,6 +102,7 @@ export const actions: Actions = {
     const existingEmail = prisma.user.findFirst({
       where: {
         email,
+        emailVerified: true,
       },
     });
     const existingUsername = prisma.user.findFirst({
@@ -133,7 +142,22 @@ export const actions: Actions = {
     const user = prisma.user.create({
       data: {
         id: username,
+        email,
         password: await hash(password, 10),
+        sessions: {
+          create: {
+            expires: DateTime.now().plus({ days: 30 }).toJSDate(),
+            lastSeen: new Date(),
+            name: ua
+              ? `${ua.getBrowser().name} on ${ua.getOS().name}`
+              : "Unknown Device",
+            ip: getClientAddress(),
+            device: ua?.getDevice().type ?? "desktop",
+          },
+        },
+      },
+      include: {
+        sessions: true,
       },
     });
     try {
@@ -152,65 +176,39 @@ export const actions: Actions = {
       });
     }
 
-    const session = prisma.session.create({
-      data: {
-        userID: username,
-        expires: DateTime.now().plus({ days: 30 }).toJSDate(),
-        lastSeen: new Date(),
-        name: ua
-          ? `${ua.getBrowser().name} on ${ua.getOS().name}`
-          : "Unknown Device",
-        ip: getClientAddress(),
-        device: ua?.getDevice().type ?? "desktop",
-      },
-    });
+    const emailVerificationToken = await new SignJWT({
+      aud: verifyEmailURI,
+      sub: username,
+      exp: DateTime.now().plus({ days: 30 }).toSeconds(),
+      email,
+    })
+      .setProtectedHeader({
+        alg: "HS256",
+      })
+      .sign(signingKey);
 
-    try {
-      await session;
-    } catch (e) {
-      console.error(e);
-      return fail(500, {
-        success: false,
-        error: {
-          email: null,
-          username: null,
-          password: false,
-          creation:
-            "An error occured while signing you in. Please log in to continue setup.",
-        },
-      });
-    }
+    const emailSent = resend.emails
+      .send({
+        from: verificationEmailAddress,
+        to: email,
+        subject: "Welcome to StreetRelay",
+        html: getStartedEmailHTML(url.origin, emailVerificationToken),
+        text: getStartedEmailText(url.origin, emailVerificationToken),
+      })
+      .then(
+        () => true,
+        (err) => {
+          console.error(err);
+          return false;
+        }
+      );
 
-    cookies.set("session", (await session).token, { path: "/" });
-
-    const emailVerificationID = createId();
-
-    const response = await resend.emails.send({
-      from: "StreetRelay <onboarding@resend.dev>",
-      to: email,
-      subject: "Welcome to StreetRelay",
-      html: getStartedEmailHTML(url.origin, emailVerificationID),
-      text: getStartedEmailText(url.origin, emailVerificationID),
-    });
-
-    if (response.data) {
-      prisma.emailVerification
-        .create({
-          data: {
-            emailID: response.data.id,
-            expires: DateTime.now().plus({ minutes: 10 }).toJSDate(), // todo
-            token: emailVerificationID,
-            userID: username,
-            email: email,
-          },
-        })
-        .catch(console.error);
-    }
+    cookies.set("session", (await user).sessions[0].token, { path: "/" });
 
     return {
-      success: response.error
-        ? "An error occured while sending the verification email. You can resend the verification email later in profile settings."
-        : true,
+      success: (await emailSent)
+        ? true
+        : "An error occured while sending the verification email. You can resend the verification email later in profile settings.",
       error: {
         email: null,
         username: null,
