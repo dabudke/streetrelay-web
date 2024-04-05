@@ -30,31 +30,19 @@ model Console {
   id            String   @id @default(cuid()) @map("_id")
   deviceName    String?
   user          User     @relation(fields: [userID], references: [id], onDelete: Cascade)
-  userID        String
+  userID        String   @unique
   tokenIssuedAt DateTime @default(now())
 
   @@map("consoles")
 }
 
-model EmailVerification {
-  token   String   @id @map("_id")
-  emailID String
-  email   String
-  expires DateTime
-  user    User     @relation(references: [id], fields: [userID], onDelete: Cascade)
-  userID  String   @unique
-
-  @@map("emailVerifications")
-}
-
 model User {
-  id                String             @id @map("_id")
-  email             String?
-  emailVerification EmailVerification?
-  password          String
-  sessions          Session[]
-  console           Console[]
+  id            String    @id @map("_id")
+  email         String
   emailVerified Boolean   @default(false)
+  password      String
+  sessions      Session[]
+  console       Console?
 
   nickname       String?
   profilePicture String  @default("/img/user.jpg")
@@ -103,7 +91,7 @@ model GameData {
   user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
   userID String
 
-  game   Game   @relation(fields: [gameID], references: [id])
+  game   Game   @relation(fields: [gameID], references: [id], onDelete: NoAction)
   gameID String
 
   data Bytes
@@ -137,10 +125,10 @@ model ContentReport {
   reporter   User              @relation(name: "Reporter", references: [id], fields: [reporterID], onDelete: NoAction)
   reporterID String
 
-  offendingUser   User?   @relation(name: "Reported", references: [id], fields: [offendingUserID])
+  offendingUser   User?   @relation(name: "Reported", references: [id], fields: [offendingUserID], onDelete: Cascade)
   offendingUserID String?
 
-  offendingGame   Game?   @relation(references: [id], fields: [offendingGameID])
+  offendingGame   Game?   @relation(references: [id], fields: [offendingGameID], onDelete: Cascade)
   offendingGameID String?
 
   @@map("contentReports")
