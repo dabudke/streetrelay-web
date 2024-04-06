@@ -62,7 +62,7 @@
 {#if !form || !form.success}
   <form
     method="post"
-    use:enhance={({ formData, cancel }) => {
+    use:enhance={() => {
       submitting = true;
 
       return async ({ result }) => {
@@ -90,10 +90,11 @@
       on:change={() => {
         if (form !== null) form.error.email = null;
       }}
-    />
-    {#if form?.error.email}
-      <p class="hint invalid">{form?.error.email}</p>
-    {:else}<br />{/if}
+    >
+      {#if form?.error.email}
+        {form?.error.email}
+      {/if}
+    </Input>
 
     <Input
       invalid={!!form?.error.username}
@@ -106,15 +107,14 @@
       on:change={() => {
         if (form !== null) form.error.username = null;
       }}
-    />
-    {#if form?.error.username}
-      <p class="hint invalid">{form?.error.username}</p>
-    {:else}
-      <p class="hint">
+    >
+      {#if form?.error.username}
+        {form?.error.username}
+      {:else}
         Must be 3-30 characters long, and only contain uppercase and lowercase
         letters, numbers, and underscores.
-      </p>
-    {/if}
+      {/if}
+    </Input>
 
     <Input
       invalid={!passwordOK || !!form?.error.password}
@@ -131,20 +131,20 @@
         passwordOK = Object.values(passwordGates).every((v) => v === true);
       }}
       on:input={onPasswordChange}
-    />
-    <p class="hint">
+    >
+    <span class="passwordGates">
       {#each Object.entries(passwordGates) as [name, fulfilled]}
-        <span class:not-fulfilled={!fulfilled}>
+        <span class:fulfilled>
           <Fa
             icon={fulfilled ? faCheck : faXmark}
             size="1x"
-            color="currentColor"
             fw
           />
           {passwordGateTexts[name]}
         </span>
       {/each}
-    </p>
+      </span>
+    </Input>
 
     <SubmitButton {submitting}>Sign Up!</SubmitButton>
 
@@ -175,25 +175,23 @@
 {/if}
 
 <style>
-  .hint {
-    display: block;
-    margin: 0.3rem 0.3rem 0.8rem;
-    font-size: 0.85rem;
-    font-weight: 500;
+  .passwordGates {
+    font-size: inherit;
+    color: color-mix(in srgb, var(--text), var(--error) 60%);
   }
-  .hint span {
+  .passwordGates span {
     font-size: inherit;
     display: flex;
     align-items: center;
     margin-top: 0.2rem;
+    color: inherit;
   }
-  .hint span :global(*) {
+  .passwordGates span :global(*) {
     margin-right: 0.1rem;
+    color: inherit;
   }
-  .hint.invalid,
-  .not-fulfilled,
-  .not-fulfilled :global(*) {
-    color: color-mix(in srgb, var(--text), var(--error) 60%);
+  .passwordGates span.fulfilled {
+    color: var(--text);
   }
 
   a.button {

@@ -107,18 +107,20 @@
               );
             }}
             on:input={onPasswordChange}
-          />
-          <p class="hint">
-            {#each Object.entries(passwordGates) as [name, fulfilled]}
-              <span class:not-fulfilled={!fulfilled}>
-                <Fa
-                  icon={fulfilled ? faCheck : faXmark}
-                  size="1x"
-                />
-                {passwordGateTexts[name]}
-              </span>
-            {/each}
-          </p>
+          >
+            <span class="passwordGates">
+              {#each Object.entries(passwordGates) as [name, fulfilled]}
+                <span class:fulfilled>
+                  <Fa
+                    icon={fulfilled ? faCheck : faXmark}
+                    size="1x"
+                    fw
+                  />
+                  {passwordGateTexts[name]}
+                </span>
+              {/each}
+            </span>
+          </Input>
           <SubmitButton {submitting}>Change Password</SubmitButton>
           <input
             type="hidden"
@@ -181,10 +183,9 @@
           form.error.email = null;
         }
       }}
-    />
-    {#if form !== null && form.error.email !== null}
-      <p class="hint invalid">{form.error.email}</p>
-    {:else}<br />{/if}
+    >
+      {#if form?.error.email}{form.error.email}{/if}
+    </Input>
     <SubmitButton {submitting}>Send Email</SubmitButton>
   </form>
   <Links>
@@ -200,24 +201,22 @@
     justify-content: center;
   }
 
-  .hint {
-    display: block;
-    margin: 0.3rem 0.3rem 0.8rem;
-    font-size: 0.85rem;
-    font-weight: 500;
+  .passwordGates {
+    font-size: inherit;
+    color: color-mix(in srgb, var(--text), var(--error) 60%);
   }
-  .hint span {
+  .passwordGates span {
     font-size: inherit;
     display: flex;
     align-items: center;
     margin-top: 0.2rem;
-  }
-  .hint :global(*) {
     color: inherit;
-    margin-right: 0.3rem;
   }
-  .hint.invalid,
-  .not-fulfilled {
-    color: color-mix(in srgb, var(--text), var(--error) 60%);
+  .passwordGates span :global(*) {
+    margin-right: 0.1rem;
+    color: inherit;
+  }
+  .passwordGates span.fulfilled {
+    color: var(--text);
   }
 </style>

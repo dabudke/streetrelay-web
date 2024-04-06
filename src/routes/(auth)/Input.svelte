@@ -20,6 +20,12 @@
   />
 </label>
 
+{#if $$slots.default}
+  <p class="hint">
+    <slot />
+  </p>
+{:else}<br />{/if}
+
 <style>
   label {
     background: var(--secondary);
@@ -72,5 +78,16 @@
     margin-left: 0.6rem;
     outline: none;
     flex-grow: 1;
+  }
+
+  .hint {
+    display: block;
+    margin: 0.3rem 0.3rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color 100ms ease-out;
+  }
+  .invalid + .hint {
+    color: color-mix(in srgb, var(--text), var(--error) 60%);
   }
 </style>
