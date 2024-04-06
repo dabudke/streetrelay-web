@@ -1,9 +1,10 @@
-import { fail, redirect } from "@sveltejs/kit";
-import type { Actions, PageServerLoad } from "./$types";
 import { authenticateSession } from "$lib/server/auth";
 import prisma from "$lib/server/prisma";
+import { fail, redirect } from "@sveltejs/kit";
 import * as bcrypt from "bcrypt";
+import { DateTime } from "luxon";
 import { UAParser } from "ua-parser-js";
+import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const redirectTo = url.searchParams.get("r");
@@ -19,17 +20,15 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     return {
       username: userID ?? "",
       error: "Your session has expired, please try again.",
-      redirectTo,
     };
   if (loggedOut)
     return {
       username: "",
       error:
         "You have been logged out from another device, please log in again.",
-      redirectTo,
     };
 
-  return { username: "", redirectTo };
+  return { username: "" };
 };
 
 export const actions: Actions = {
@@ -56,16 +55,19 @@ export const actions: Actions = {
         },
       });
     }
-    const user = /^.+@.+\.(?:.){2,6}$/.test(usernameOrEmail)
-      ? await prisma.user.findFirst({
-          where: {
-            email: usernameOrEmail,
-            emailVerification: null,
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          {
+            id: usernameOrEmail,
           },
-        })
-      : await prisma.user.findUnique({
-          where: { id: usernameOrEmail },
-        });
+          {
+            email: usernameOrEmail,
+            emailVerified: true,
+          },
+        ],
+      },
+    });
 
     if (!user) {
       return fail(400, {
@@ -89,12 +91,12 @@ export const actions: Actions = {
         where: { token: oldSessionToken },
       });
       if (oldSession) {
-        if (oldSession.userID == user.id) {
+        if (oldSession.userID === user.id) {
           await prisma.session.update({
             where: { token: oldSessionToken },
             data: {
-              lastSeen: new Date(),
-              expires: new Date(Date.now() + 2_592_000_000),
+              lastSeen: DateTime.now().toJSDate(),
+              expires: DateTime.now().plus({ days: 30 }).toJSDate(),
             },
           });
           throw redirect(303, redirectTo);
@@ -107,8 +109,8 @@ export const actions: Actions = {
     const session = await prisma.session.create({
       data: {
         userID: user.id,
-        expires: new Date(Date.now() + 2_592_000_000),
-        lastSeen: new Date(),
+        expires: DateTime.now().plus({ days: 30 }).toJSDate(),
+        lastSeen: DateTime.now().toJSDate(),
         name: ua
           ? `${ua.getBrowser().name} on ${ua.getOS().name}`
           : "Unknown Device",
