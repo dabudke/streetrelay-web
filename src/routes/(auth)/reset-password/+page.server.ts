@@ -1,9 +1,9 @@
 import { jwtVerify, errors, SignJWT } from "jose";
 import type { Actions, PageServerLoad } from "./$types";
 import {
-  authenticateSession,
+  authenticateSessionToken,
   resetPasswordURI,
-  signingKey,
+  tokenKey,
 } from "$lib/server/auth";
 import { fail, redirect } from "@sveltejs/kit";
 import prisma from "$lib/server/prisma";
@@ -20,7 +20,7 @@ async function verifyToken(
   token: string
 ): Promise<{ success: boolean; error?: string; userID?: string }> {
   return new Promise((res) => {
-    jwtVerify(token, signingKey, {
+    jwtVerify(token, tokenKey, {
       audience: resetPasswordURI,
       requiredClaims: ["sub", "exp"],
     }).then(
@@ -51,10 +51,8 @@ async function verifyToken(
 }
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
-  const { success: loggedIn } = await authenticateSession(
-    cookies.get("session")
-  );
-  if (loggedIn) redirect(301, "/");
+  const { error } = await authenticateSessionToken(cookies.get("session"));
+  if (!error) redirect(301, "/");
 
   const token = url.searchParams.get("t");
   if (token) {
@@ -106,7 +104,7 @@ export const actions: Actions = {
         .setProtectedHeader({
           alg: "HS256",
         })
-        .sign(signingKey);
+        .sign(tokenKey);
       const response = await resend.emails.send({
         from: recoveryEmailAddress,
         to: email,

@@ -19,7 +19,7 @@
     },
   };
 
-  let usernameOrEmail: string = form?.username ?? data.username ?? "";
+  let usernameOrEmail: string = form?.username ?? data.userID ?? "";
   let submitting: boolean = false;
 </script>
 

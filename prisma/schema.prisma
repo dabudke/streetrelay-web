@@ -11,8 +11,7 @@ datasource db {
 }
 
 model Session {
-  token String @id @default(cuid()) @map("_id")
-
+  id     String @id @default(cuid()) @map("_id")
   user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
   userID String
 
@@ -20,8 +19,7 @@ model Session {
   device String
   ip     String
 
-  lastSeen DateTime
-  expires  DateTime
+  lastLogin DateTime
 
   @@map("sessions")
 }

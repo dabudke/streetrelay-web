@@ -1,5 +1,6 @@
 <script lang="ts">
   import { applyAction, enhance } from "$app/forms";
+  import { page } from "$app/stores";
   import {
     faCheck,
     faEnvelope,
@@ -12,9 +13,8 @@
   import Input from "../Input.svelte";
   import Links from "../Links.svelte";
   import SubmitButton from "../SubmitButton.svelte";
-  import type { ActionData, PageData, Snapshot } from "./$types";
+  import type { ActionData, Snapshot } from "./$types";
 
-  export let data: PageData;
   export let form: ActionData;
 
   export const snapshot: Snapshot<{ username: string; email: string }> = {
@@ -132,17 +132,17 @@
       }}
       on:input={onPasswordChange}
     >
-    <span class="passwordGates">
-      {#each Object.entries(passwordGates) as [name, fulfilled]}
-        <span class:fulfilled>
-          <Fa
-            icon={fulfilled ? faCheck : faXmark}
-            size="1x"
-            fw
-          />
-          {passwordGateTexts[name]}
-        </span>
-      {/each}
+      <span class="passwordGates">
+        {#each Object.entries(passwordGates) as [name, fulfilled]}
+          <span class:fulfilled>
+            <Fa
+              icon={fulfilled ? faCheck : faXmark}
+              size="1x"
+              fw
+            />
+            {passwordGateTexts[name]}
+          </span>
+        {/each}
       </span>
     </Input>
 
@@ -150,8 +150,8 @@
 
     <Links>
       <a
-        href="/login{data.redirectTo
-          ? `?r=${encodeURIComponent(data.redirectTo)}`
+        href="/login{$page.url.searchParams.get('r')
+          ? `?r=${encodeURIComponent($page.url.searchParams.get('r') ?? '')}`
           : ''}">Log In</a
       >
     </Links>

@@ -1,45 +1,100 @@
-import { SignJWT, errors, jwtVerify } from "jose";
-import prisma from "./prisma";
 import { KEY_SECRET } from "$env/static/private";
-import { DateTime } from "luxon";
 import { isCuid } from "@paralleldrive/cuid2";
+import { SignJWT, errors, jwtVerify } from "jose";
+import { DateTime } from "luxon";
+import prisma from "./prisma";
 
-export const signingKey = new TextEncoder().encode(KEY_SECRET);
+export const tokenKey = new TextEncoder().encode(KEY_SECRET);
+export const consoleTokenURI = "strl:console";
+export const sessionTokenURI = "strl:session";
 export const resetPasswordURI = "strl:reset-password";
 export const verifyEmailURI = "strl:verify-email";
+export const recoverEmailURI = "strl:recover-email";
 
-type SessionVerificationResult =
+export enum SessionAuthenticationError {
+  NoToken = "NO_TOKEN_PROVIDED",
+  ExpiredSession = "SESSION_EXPIRED",
+  BadToken = "BAD_TOKEN",
+  InvalidSession = "INVALID_SESSION",
+}
+
+export async function authenticateSessionToken(
+  token: string | undefined
+): Promise<
   | {
-      success: true;
+      sessionID: string;
       userID: string;
-      sessionToken: string;
+      freshLogin: boolean;
+      error: undefined;
     }
   | {
-      success: false;
-      loggedOut?: true;
-      noToken?: true;
-      invalid?: true;
-      expired?: true;
-      userID?: string;
+      sessionID: string | undefined;
+      userID: string | undefined;
+      freshLogin: undefined;
+      error: SessionAuthenticationError;
+    }
+> {
+  if (!token)
+    return {
+      sessionID: undefined,
+      userID: undefined,
+      freshLogin: undefined,
+      error: SessionAuthenticationError.NoToken,
     };
 
-export async function authenticateSession(
-  token: string | undefined
-): Promise<SessionVerificationResult> {
-  if (!token) return { success: false, noToken: true };
-  if (!isCuid(token)) return { success: false, invalid: true };
+  const tokenData = await jwtVerify<{
+    jti: string;
+    sub: string;
+    aud: string;
+    iat: number;
+  }>(token, tokenKey, {
+    audience: sessionTokenURI,
+    requiredClaims: ["iat", "jti", "sub"],
+  }).catch(() => undefined);
+  if (!tokenData)
+    return {
+      userID: undefined,
+      sessionID: undefined,
+      freshLogin: undefined,
+      error: SessionAuthenticationError.BadToken,
+    };
+
+  const { sub: userID, jti: sessionID, iat: timeIssued } = tokenData.payload;
 
   const session = await prisma.session.findUnique({
-    where: { token },
+    where: { id: sessionID, userID },
   });
-  if (!session) return { success: false, loggedOut: true };
-  if (session.expires <= new Date())
-    return { success: false, expired: true, userID: session.userID };
+  if (!session)
+    return {
+      sessionID,
+      userID,
+      freshLogin: undefined,
+      error: SessionAuthenticationError.InvalidSession,
+    };
+
+  // Security - sanity check for token spoofing
+  if (DateTime.fromJSDate(session.lastLogin).toSeconds() !== timeIssued)
+    return {
+      sessionID: undefined,
+      userID: undefined,
+      freshLogin: undefined,
+      error: SessionAuthenticationError.BadToken,
+    };
+
+  const currentTime = DateTime.now();
+  if (timeIssued < currentTime.minus({ days: 30 }).toSeconds())
+    return {
+      sessionID,
+      userID,
+      freshLogin: undefined,
+      error: SessionAuthenticationError.ExpiredSession,
+    };
 
   return {
-    success: true,
-    userID: session.userID,
-    sessionToken: session.token,
+    sessionID,
+    userID,
+    freshLogin: timeIssued > currentTime.minus({ hours: 24 }).toSeconds(),
+    error: undefined,
   };
 }
 
@@ -66,7 +121,8 @@ export async function authenticateToken(
 
   try {
     const payload = (
-      await jwtVerify(token, signingKey, {
+      await jwtVerify(token, tokenKey, {
+        audience: consoleTokenURI,
         maxTokenAge: "5 minutes",
         requiredClaims: ["sub"],
       })
@@ -89,7 +145,8 @@ export async function authenticateTokenForRefresh(
 ): Promise<TokenAuthenticationResult> {
   try {
     const payload = (
-      await jwtVerify(token, signingKey, {
+      await jwtVerify(token, tokenKey, {
+        audience: consoleTokenURI,
         maxTokenAge: "14 days",
         requiredClaims: ["jti", "sub"],
       })
@@ -147,7 +204,7 @@ export async function issueToken(
     },
   });
 
-  return token.sign(signingKey);
+  return token.sign(tokenKey);
 }
 
 // Device Token

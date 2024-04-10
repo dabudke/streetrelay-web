@@ -1,6 +1,7 @@
 import {
-  authenticateSession,
-  signingKey,
+  authenticateSessionToken,
+  sessionTokenURI,
+  tokenKey,
   verifyEmailURI,
 } from "$lib/server/auth";
 import {
@@ -15,18 +16,14 @@ import { hash } from "bcrypt";
 import { SignJWT } from "jose";
 import { DateTime } from "luxon";
 import { UAParser } from "ua-parser-js";
-import type { PageServerLoad, Actions } from "./$types";
+import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
   const redirectTo = url.searchParams.get("r");
 
-  const { success: loggedIn } = await authenticateSession(
-    cookies.get("session")
-  );
+  const { error } = await authenticateSessionToken(cookies.get("session"));
 
-  if (loggedIn) throw redirect(303, redirectTo ?? "/");
-
-  return { redirectTo };
+  if (!error) throw redirect(303, redirectTo ?? "/");
 };
 
 export const actions: Actions = {
@@ -137,7 +134,8 @@ export const actions: Actions = {
     // Account creation succeeds!
 
     const uaHeader = request.headers.get("user-agent"),
-      ua = uaHeader == null ? uaHeader : new UAParser(uaHeader);
+      ua = uaHeader == null ? uaHeader : new UAParser(uaHeader),
+      loginTime = DateTime.now().startOf("second");
 
     const user = prisma.user.create({
       data: {
@@ -146,13 +144,12 @@ export const actions: Actions = {
         password: await hash(password, 10),
         sessions: {
           create: {
-            expires: DateTime.now().plus({ days: 30 }).toJSDate(),
-            lastSeen: new Date(),
             name: ua
               ? `${ua.getBrowser().name} on ${ua.getOS().name}`
               : "Unknown Device",
             ip: getClientAddress(),
             device: ua?.getDevice().type ?? "desktop",
+            lastLogin: loginTime.toJSDate(),
           },
         },
       },
@@ -179,13 +176,13 @@ export const actions: Actions = {
     const emailVerificationToken = await new SignJWT({
       aud: verifyEmailURI,
       sub: username,
-      exp: DateTime.now().plus({ days: 30 }).toSeconds(),
+      exp: DateTime.now().plus({ minutes: 10 }).toSeconds(),
       email,
     })
       .setProtectedHeader({
         alg: "HS256",
       })
-      .sign(signingKey);
+      .sign(tokenKey);
 
     const emailSent = resend.emails
       .send({
@@ -203,7 +200,17 @@ export const actions: Actions = {
         }
       );
 
-    cookies.set("session", (await user).sessions[0].token, { path: "/" });
+    const { id: sessionID, userID } = (await user).sessions[0];
+    const sessionToken = await new SignJWT({
+      aud: sessionTokenURI,
+      iat: loginTime.toSeconds(),
+      sub: userID,
+      jti: sessionID,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .sign(tokenKey);
+
+    cookies.set("session", sessionToken, { path: "/" });
 
     return {
       success: (await emailSent)
