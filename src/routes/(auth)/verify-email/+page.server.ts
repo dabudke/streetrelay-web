@@ -1,5 +1,8 @@
-import type { PageServerLoad } from "./$types";
+import { recoverEmailURI, tokenKey, verifyEmailURI } from "$lib/server/auth";
 import prisma from "$lib/server/prisma";
+import { jwtVerify } from "jose";
+import { JWTExpired } from "jose/errors";
+import type { PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ url }) => {
   const token = url.searchParams.get("t");
@@ -10,71 +13,86 @@ export const load: PageServerLoad = async ({ url }) => {
     };
   }
 
-  const verification = await prisma.emailVerification.findUnique({
+  const data = await jwtVerify<{
+    aud: string;
+    sub: string;
+    email: string;
+  }>(token, tokenKey, {
+    requiredClaims: ["exp", "sub", "aud", "email"],
+  }).then(
+    ({ payload }) => ({ success: true, payload, err: undefined }),
+    (err) => ({ success: undefined, payload: undefined, err })
+  );
+
+  if (!data.success) {
+    if (data.err instanceof JWTExpired)
+      return {
+        error: true,
+        message:
+          "Token has expired, try resending the verification email. If you are trying to recover your account, please contact support.",
+      };
+    console.error(data.err);
+    return {
+      error: true,
+      message:
+        "Invalid token. Try resending the verification email. If you are trying to recover your account, please contact support.",
+    };
+  }
+  const { aud: audience, sub: userID, email } = data.payload;
+
+  const user = await prisma.user.findUnique({
     where: {
-      token,
-    },
-    include: {
-      user: true,
+      id: userID,
     },
   });
-  if (!verification) {
+  if (!user)
     return {
       error: true,
-      message:
-        "An error occured while trying to verify your email. Please try again later.",
+      message: "Could not find your user account. Please try again later.",
     };
-  }
-  if (verification.expires <= new Date()) {
-    prisma.emailVerification
-      .delete({
+
+  switch (audience) {
+    case verifyEmailURI: {
+      if (user.email !== email)
+        return {
+          error: true,
+          message: "Email verification link invalid.",
+        };
+
+      await prisma.user.update({
         where: {
-          token,
+          id: userID,
         },
-      })
-      .catch(console.error);
-    return {
-      error: true,
-      message: "This link has expired. Please resend the verification email.",
-    };
+        data: {
+          emailVerified: true,
+        },
+      });
+      return {
+        error: false,
+        message: `Email address ${email} verified! You can now recieve email notifications.`,
+      };
+    }
+
+    case recoverEmailURI: {
+      await prisma.user.update({
+        where: {
+          id: userID,
+        },
+        data: {
+          email,
+          emailVerified: true,
+        },
+      });
+      return {
+        error: false,
+        message: `Your email has been successfully reset to ${email}. If your account has been hijacked, you can reset your password.`,
+      };
+    }
+
+    default:
+      return {
+        error: true,
+        message: "Invalid email verification token. Please try again later.",
+      };
   }
-
-  // Email verified!
-
-  try {
-    await prisma.user.update({
-      where: {
-        id: verification.userId,
-      },
-      data: {
-        email: verification.email,
-      },
-    });
-  } catch (e) {
-    console.error(e);
-    return {
-      error: true,
-      message:
-        "An error occured while updating your email address. Please try again later.",
-    };
-  }
-
-  try {
-    await prisma.emailVerification.delete({
-      where: {
-        token,
-      },
-    });
-  } catch (e) {
-    console.error(e);
-    return {
-      error: true,
-      message: "Your email has not been updated, please try again later.",
-    };
-  }
-
-  return {
-    error: false,
-    message: `Email successfully updated to ${verification.email}. You may now close this tab.`,
-  };
 };
