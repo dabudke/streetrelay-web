@@ -42,15 +42,17 @@ model User {
   sessions      Session[]
   console       Console?
 
+  emailVerificationSent DateTime?
+
   nickname       String?
   profilePicture String  @default("/img/user.jpg")
-  bio            String  @default("")
+  bio            String?
 
-  starredBy    User[]   @relation("StarredUsers", fields: [starredByIDs], references: [id])
+  starredBy    User[]   @relation("Stars", fields: [starredByIDs], references: [id])
   starredByIDs String[]
 
-  starredUsers   User[]   @relation("StarredUsers", fields: [starredUserIDs], references: [id])
-  starredUserIDs String[]
+  starred    User[]   @relation("Stars", fields: [starredIDs], references: [id])
+  starredIDs String[]
 
   inboundTags  Tag[] @relation("InboundTag")
   outboundTags Tag[] @relation("OutboundTag")
@@ -76,14 +78,16 @@ model Tag {
   target   User   @relation("InboundTag", fields: [targetID], references: [id], onDelete: Cascade)
   targetID String
 
-  gameData    GameData[] @relation(fields: [gameDataIDs], references: [id])
-  gameDataIDs String[]   @db.ObjectId
+  remainingGameData    GameData[] @relation("Remaining", fields: [remainingGameDataIDs], references: [id])
+  remainingGameDataIDs String[]
+  gameData             GameData[] @relation("All", fields: [gameDataIDs], references: [id])
+  gameDataIDs          String[]
 
   @@map("tags")
 }
 
 model GameData {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  id         String   @id @default(cuid()) @map("_id")
   uploadedAt DateTime @default(now())
 
   user   User   @relation(fields: [userID], references: [id], onDelete: Cascade)
@@ -94,8 +98,10 @@ model GameData {
 
   data Bytes
 
-  tags   Tag[]    @relation(fields: [tagIDs], references: [id])
-  tagIDs String[]
+  tagsWhereRemaining    Tag[]    @relation("Remaining", fields: [tagsWhereRemainingIDs], references: [id]) @ignore
+  tagsWhereRemainingIDs String[] @ignore
+  tags                  Tag[]    @relation("All", fields: [tagIDs], references: [id])
+  tagIDs                String[]
 
   @@map("data")
 }
