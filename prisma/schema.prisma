@@ -45,7 +45,7 @@ model User {
   emailVerificationSent DateTime?
 
   nickname       String?
-  profilePicture String  @default("/img/user.jpg")
+  profilePicture String  @default("/img/user.png")
   bio            String?
 
   starredBy    User[]   @relation("Stars", fields: [starredByIDs], references: [id])
