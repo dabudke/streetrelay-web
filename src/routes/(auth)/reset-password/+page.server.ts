@@ -1,20 +1,20 @@
-import { jwtVerify, errors, SignJWT } from "jose";
-import type { Actions, PageServerLoad } from "./$types";
 import {
   authenticateSessionToken,
   resetPasswordURI,
   tokenKey,
 } from "$lib/server/auth";
-import { fail, redirect } from "@sveltejs/kit";
-import prisma from "$lib/server/prisma";
-import resend from "$lib/server/mail";
 import {
   recoveryEmailAddress,
+  resend,
   resetPasswordEmailHTML,
   resetPasswordEmailText,
-} from "$lib/server/emails";
-import { DateTime } from "luxon";
+} from "$lib/server/email";
+import prisma from "$lib/server/prisma";
+import { fail, redirect } from "@sveltejs/kit";
 import { hash } from "bcrypt";
+import { SignJWT, errors, jwtVerify } from "jose";
+import { DateTime } from "luxon";
+import type { Actions, PageServerLoad } from "./$types";
 
 async function verifyToken(
   token: string

@@ -1,3 +1,10 @@
+import { Resend } from "resend";
+import { RESEND_KEY } from "$env/static/private";
+
+export const resend = new Resend(RESEND_KEY);
+
+// export const notificationsEmailAddress = "StreetRelay <notifications@emails.streetrelay.me>";
+export const notificationsEmailAddress = "StreetRelay <onboarding@resend.dev>";
 // export const recoveryEmailAddress = "StreetRelay <recovery@emails.streetrelay.me>";
 export const recoveryEmailAddress = "StreetRelay <onboarding@resend.dev>";
 // export const verificationEmailAddress = "StreetRelay <verify@emails.streetrelay.me>";
@@ -45,3 +52,12 @@ ${origin}/reset-password?t=${token}
 
 If you did not request this email, you can ignore it.
 This link will expire in 5 minutes.`;
+
+export const verifyEmailText = (
+  origin: string,
+  token: string
+) => `You have requested an email
+
+here it is
+${origin}/verify-emmail?t=${token}
+`;

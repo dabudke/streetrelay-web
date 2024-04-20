@@ -7,9 +7,9 @@ import {
 import {
   getStartedEmailHTML,
   getStartedEmailText,
+  resend,
   verificationEmailAddress,
-} from "$lib/server/emails";
-import resend from "$lib/server/mail";
+} from "$lib/server/email";
 import prisma from "$lib/server/prisma";
 import { fail, redirect } from "@sveltejs/kit";
 import { hash } from "bcrypt";
