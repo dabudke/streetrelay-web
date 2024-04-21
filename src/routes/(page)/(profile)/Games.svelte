@@ -36,7 +36,7 @@
       <i class="nogames">No games uploaded yet.</i>
     {/if}
   {/each}
-  {#if selfPage}
+  {#if selfPage && games.length > 0}
     <li class="ghost"><a href="/me/games"><Fa icon={faPlus} /></a></li>
   {/if}
 </ul>

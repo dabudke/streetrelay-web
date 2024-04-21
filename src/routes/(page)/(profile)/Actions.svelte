@@ -1,17 +1,14 @@
 <script lang="ts">
   import { enhance } from "$app/forms";
+  import { faStar as faStarOutlined } from "@fortawesome/free-regular-svg-icons";
   import {
-    faCircle,
     faCircleNotch,
     faSignIn,
     faStar,
     faTag,
-    faTags,
     faUserCheck,
     faUserPlus,
-    faUserXmark,
   } from "@fortawesome/free-solid-svg-icons";
-  import { faStar as faStarOutlined } from "@fortawesome/free-regular-svg-icons";
   import { error } from "@sveltejs/kit";
   import Fa from "svelte-fa";
 
@@ -223,7 +220,9 @@
     align-items: center;
     gap: 0.3rem;
     color: var(--text);
-    transition: color 100ms ease-out;
+    transition:
+      background 100ms ease-out,
+      color 100ms ease-out;
     background: none;
     padding: 0.5rem 0.75rem;
     border-radius: 1.25rem;

@@ -1,8 +1,8 @@
-import { error, fail, redirect } from "@sveltejs/kit";
-import type { Actions, PageServerLoad } from "./$types";
 import { authenticateSessionToken } from "$lib/server/auth";
 import prisma from "$lib/server/prisma";
+import { error, fail, redirect } from "@sveltejs/kit";
 import { DateTime } from "luxon";
+import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ params, parent }) => {
   // get authentication
@@ -147,9 +147,11 @@ export const actions: Actions = {
       await prisma.user.update({
         where: { id: targetUserID },
         data: {
-          starredByIDs: targetUser.starredByIDs.filter(
-            (id) => id !== currentUserID
-          ),
+          starredBy: {
+            disconnect: {
+              id: currentUserID,
+            },
+          },
         },
       });
       return {
@@ -159,8 +161,10 @@ export const actions: Actions = {
       await prisma.user.update({
         where: { id: targetUserID },
         data: {
-          starredByIDs: {
-            push: currentUserID,
+          starredBy: {
+            connect: {
+              id: currentUserID,
+            },
           },
         },
       });
