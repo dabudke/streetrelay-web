@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ params, parent }) => {
   const {
     auth: { error: authError, userID: currentUser },
   } = await parent();
-  if (currentUser === params.userID.slice(1)) throw redirect(303, "/me");
+  if (currentUser === params.userID.slice(1)) redirect(303, "/me");
   // get user
   // - prune tags for count
   const user = await prisma.user.findUnique({
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, parent }) => {
       },
     },
   });
-  if (!user) error(404);
+  if (!user) error(404, { message: params.userID.slice(1) });
 
   const {
     id: userID,
