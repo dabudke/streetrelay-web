@@ -1,6 +1,6 @@
 import { KEY_SECRET } from "$env/static/private";
 import { isCuid } from "@paralleldrive/cuid2";
-import { SignJWT, errors, jwtVerify } from "jose";
+import { errors, jwtVerify } from "jose";
 import { DateTime } from "luxon";
 import prisma from "./prisma";
 
@@ -18,9 +18,7 @@ export enum SessionAuthenticationError {
   InvalidSession = "INVALID_SESSION",
 }
 
-export async function authenticateSessionToken(
-  token: string | undefined
-): Promise<
+type SessionAuthenticationResult =
   | {
       sessionID: string;
       userID: string;
@@ -32,8 +30,11 @@ export async function authenticateSessionToken(
       userID: string | undefined;
       freshLogin: undefined;
       error: SessionAuthenticationError;
-    }
-> {
+    };
+
+export async function authenticateSessionToken(
+  token: string | undefined
+): Promise<SessionAuthenticationResult> {
   if (!token)
     return {
       sessionID: undefined,
@@ -98,115 +99,101 @@ export async function authenticateSessionToken(
   };
 }
 
+enum TokenAuthenticationError {
+  NoToken = "NO_TOKEN_PROVIDED",
+  ExpiredToken = "TOKEN_EXPIRED",
+  InvalidToken = "INVALID_TOKEN",
+  BadToken = "BAD_TOKEN",
+}
+
 type TokenAuthenticationResult =
   | {
-      success: true;
-      userID: string;
       deviceID: string;
+      userID: string;
+      stale: boolean;
+      error: undefined;
     }
   | {
-      success: false;
-      noToken?: true;
-      notFound?: true;
-      expired?: true;
-      invalid?: true;
-      userID?: string;
-      deviceID?: string;
+      deviceID: string | undefined;
+      userID: string | undefined;
+      stale: undefined;
+      error: TokenAuthenticationError;
     };
 
 export async function authenticateToken(
-  token: string | null
+  header: string | null
 ): Promise<TokenAuthenticationResult> {
-  if (!token) return { success: false, noToken: true };
-
-  try {
-    const payload = (
-      await jwtVerify(token, tokenKey, {
-        audience: consoleTokenURI,
-        maxTokenAge: "5 minutes",
-        requiredClaims: ["sub"],
-      })
-    ).payload;
-    if (!isCuid(payload.jti ?? "")) return { success: false, invalid: true };
+  if (!header)
     return {
-      success: true,
-      deviceID: payload.jti ?? "",
-      userID: payload.sub ?? "",
+      deviceID: undefined,
+      userID: undefined,
+      stale: undefined,
+      error: TokenAuthenticationError.NoToken,
     };
-  } catch (e) {
-    if (e instanceof errors.JWTExpired)
-      return { success: false, expired: true };
-    else return { success: false, invalid: true };
-  }
-}
 
-export async function authenticateTokenForRefresh(
-  token: string
-): Promise<TokenAuthenticationResult> {
-  try {
-    const payload = (
-      await jwtVerify(token, tokenKey, {
-        audience: consoleTokenURI,
-        maxTokenAge: "14 days",
-        requiredClaims: ["jti", "sub"],
-      })
-    ).payload;
-
-    const device = await prisma.console.findUnique({
-      where: {
-        id: payload.jti,
-        userID: payload.sub,
-      },
-    });
-    if (!device) return { success: false, notFound: true };
-    if (DateTime.fromJSDate(device.tokenIssuedAt).toSeconds() !== payload.iat)
-      return { success: false, invalid: true };
-
-    // Authentication Barrier //
-
+  if (!header.startsWith("Bearer "))
     return {
-      success: true,
-      deviceID: device.id,
-      userID: device.userID,
+      deviceID: undefined,
+      userID: undefined,
+      stale: undefined,
+      error: TokenAuthenticationError.BadToken,
     };
-  } catch (e) {
-    if (e instanceof errors.JWTExpired)
-      return { success: false, expired: true };
-    return { success: false, invalid: true };
-  }
-}
 
-export async function issueToken(
-  userID: string,
-  deviceID: string
-): Promise<string> {
-  const issued = DateTime.now().startOf("second");
+  const token = header.slice(7);
 
-  const token = new SignJWT({
-    jti: deviceID,
-    sub: userID,
-    iat: issued.toSeconds(),
-  }).setProtectedHeader({
-    alg: "HS256",
+  const tokenData = await jwtVerify<{ sub: string; iat: number; jti: string }>(
+    token,
+    tokenKey,
+    {
+      audience: consoleTokenURI,
+      requiredClaims: ["sub", "iat", "jti"],
+    }
+  ).catch(() => undefined);
+  if (!tokenData)
+    return {
+      deviceID: undefined,
+      userID: undefined,
+      stale: undefined,
+      error: TokenAuthenticationError.BadToken,
+    };
+
+  const { sub: userID, jti: deviceID, iat } = tokenData.payload,
+    timeIssued = DateTime.fromSeconds(iat);
+
+  const device = await prisma.console.findUnique({
+    where: { id: deviceID, userID },
   });
-
-  await prisma.console.upsert({
-    where: {
-      id: deviceID,
-    },
-    update: {
-      tokenIssuedAt: issued.toJSDate(),
-    },
-    create: {
-      id: deviceID,
+  if (!device)
+    return {
+      deviceID,
       userID,
-      tokenIssuedAt: issued.toJSDate(),
-    },
-  });
+      stale: undefined,
+      error: TokenAuthenticationError.InvalidToken,
+    };
 
-  return token.sign(tokenKey);
+  if (
+    DateTime.fromJSDate(device.tokenIssuedAt).valueOf() !== timeIssued.valueOf()
+  )
+    return {
+      deviceID: undefined,
+      userID: undefined,
+      stale: undefined,
+      error: TokenAuthenticationError.BadToken,
+    };
+
+  const currentTime = DateTime.now();
+  if (timeIssued < currentTime.minus({ days: 30 }))
+    return {
+      deviceID,
+      userID,
+      stale: undefined,
+      error: TokenAuthenticationError.ExpiredToken,
+    };
+
+  return {
+    deviceID,
+    userID,
+    stale: timeIssued < currentTime.minus({ minutes: 5 }),
+    error: undefined,
+  };
 }
-
-// Device Token
-// sub - user
-// iat - (invalid for use after 5 mins, invalid for login after 30d)
